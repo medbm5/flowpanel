@@ -46,3 +46,23 @@ _None yet._
 - Deviations: `GateCheck` carries `id`, `action` and `needsReview` in addition to `label`/`passed`, so the UI can show the next
   action and the "Needs review" tag without extra logic. Workers and templates are Flyway reference data; only missions are reset.
   Gate validators start as artifact-based checks and are replaced with the real phase rules in Slices 5–9.
+
+### Slice 4 — AI gateway, PII masking and AI call metrics
+- Built: `AiGateway` (`structured`, `text`, `embed`, `withTools`) implemented once by `DefaultAiGateway`; the AI profile only swaps the
+  provider SPI `AiModelClient`: `MockAiModelClient` (default; deterministic responders keyed by prompt template id, hash-based
+  1536-d embeddings, simulated tokens and latency) or `SpringAiModelClient` (live; Spring AI 1.1.8 `OpenAiChatModel` with JSON-schema
+  structured outputs via `BeanOutputConverter`, function calling via `ToolCallback`, `OpenAiEmbeddingModel`). `PiiMasker`
+  (emails, phones, known names → `[PERSON_n]`/`[EMAIL_n]`/`[PHONE_n]`, restored after the call; tool args unmasked / tool results masked),
+  `PiiDirectory` (workers, users, `known_contact`), `ai_call` + `AiCallRecorder` (own transaction, audit event per attempt),
+  price table in config (gpt-4o-mini $0.15/$0.60, text-embedding-3-small $0.02 per 1M), `SpendGuard` (daily budget from live `ai_call`
+  cost, per-tenant 1-minute rate limit), `max_tokens` on every call, one retry on invalid structured output with the error appended,
+  typed `AiException` codes (`ai_budget_exceeded`, `ai_rate_limited`, `ai_invalid_output`, `ai_provider_error`), `EmbeddingService`
+  with a content-hash `embedding_cache`.
+- Tests: `PiiMaskerTest` (round trips), `DefaultAiGatewayTest` (retry, double failure, masking, budget, rate limit, tools, provider error),
+  `SpendGuardTest`, `AiGatewayIT` (ai_call row + audit event per call, provider never receives PII, cache hit avoids re-embedding).
+  `SpringAiModelClientLiveTest` is opt-in (`OPENAI_LIVE_SMOKE=true`) and was run once against OpenAI: structured output, tool calling and
+  embeddings all pass.
+- Deviations: instead of separate `SpringAiGateway`/`MockAiGateway` classes, one gateway + two provider clients, so masking, spend
+  protection, retries and metrics are tested identically in both profiles. Mock calls are recorded as `mock/<model>` and priced like the
+  model they simulate (dashboard shows realistic numbers); the budget only counts `profile = live` rows. Spring AI is used without its
+  auto-configuration so the mock profile never needs a key.

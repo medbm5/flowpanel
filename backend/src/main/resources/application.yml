@@ -58,8 +58,21 @@ flowpanel:
     ttl: 8h
     cookie-name: fp_session
     secure-cookie: false
+  demo:
+    seed-on-startup: true
   ai:
     profile: ${AI_PROFILE:mock}
+    api-key: ${OPENAI_API_KEY:}
     chat-model: ${OPENAI_CHAT_MODEL:gpt-4o-mini}
     embedding-model: ${OPENAI_EMBEDDING_MODEL:text-embedding-3-small}
     daily-budget-usd: ${AI_DAILY_BUDGET_USD:2}
+    rate-limit-per-minute: ${AI_RATE_LIMIT_PER_MINUTE:30}
+    default-max-tokens: 800
+    confidence-threshold: 0.75
+    # USD per 1M tokens (OpenAI pricing page, checked 2026-10-01). Used for estimated cost per call.
+    pricing:
+      "[gpt-4o-mini]": { input-per-million: 0.15, output-per-million: 0.60 }
+      "[gpt-4.1-nano]": { input-per-million: 0.10, output-per-million: 0.40 }
+      "[gpt-5-nano]": { input-per-million: 0.05, output-per-million: 0.40 }
+      "[gpt-5-mini]": { input-per-million: 0.25, output-per-million: 2.00 }
+      "[text-embedding-3-small]": { input-per-million: 0.02, output-per-million: 0 }

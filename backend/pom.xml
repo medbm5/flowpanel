@@ -20,7 +20,20 @@
         <java.version>21</java.version>
         <springdoc.version>2.9.1</springdoc.version>
         <jjwt.version>0.13.0</jjwt.version>
+        <spring-ai.version>1.1.8</spring-ai.version>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bom</artifactId>
+                <version>${spring-ai.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
@@ -62,6 +75,11 @@
             <version>${springdoc.version}</version>
         </dependency>
 
+        <!-- Spring AI without auto-configuration: the OpenAI client is only built in the live AI profile. -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-openai</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>
