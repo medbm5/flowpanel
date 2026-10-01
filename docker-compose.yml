@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: flowpanel-postgres
+    environment:
+      POSTGRES_DB: flowpanel
+      POSTGRES_USER: flowpanel
+      POSTGRES_PASSWORD: flowpanel
+    ports:
+      - "5433:5432"
+    volumes:
+      - flowpanel-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flowpanel -d flowpanel"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  flowpanel-pgdata:
