@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api, call, errorMessage } from "@/lib/api/client";
 import type { EvalRun, MetricsOverview } from "@/lib/api/types";
-import { dateTime, money, percent } from "@/lib/format";
+import { dateTime, percent } from "@/lib/format";
 import { AuditExplorer } from "./audit-explorer";
 
 const AXIS = { fontSize: 11, fill: "var(--muted-foreground)" };
