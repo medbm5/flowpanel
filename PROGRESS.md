@@ -181,3 +181,14 @@ _None yet._
   finalized phases are read-only. Every AI-generated element carries the "AI" badge.
 - Tests: Vitest (`GatePanel` disabled/enabled, `PhaseRail` locked toast) and **Playwright `e2e/mission-flow.spec.ts` walking one mission from
   Intake to Closed against the backend in mock profile** (resets the demo through the admin endpoint first, so it is repeatable).
+
+### Slice 14 — Copilot panel and admin monitoring
+- Built: copilot side sheet in `/app` (buyers and suppliers): chat, suggestions, answers with `[n]` citations rendered as numbered chips that
+  open the source passage, collapsible "steps" trace of tool calls (name, arguments, result). `/app/admin` (admin persona): stat tiles (calls,
+  p50/p95 latency, error rate, tokens, estimated cost, live spend today vs budget, share of AI extractions corrected by humans), Recharts bars
+  (latency p50/p95 per feature, estimated cost per tenant), per-feature table (table view of the charts), eval scores over time (line chart,
+  empty state until Slice 16), audit log explorer (mission, actor, AI / human / system), demo reset button.
+  Backend: `GET /admin/metrics/overview`, `GET /admin/metrics/evals`, `POST /admin/evals/runs` (`eval_run` table), `GET /admin/audit`.
+- Chart palette (categorical order) validated with the dataviz validator in light (#ffffff) and dark (#111830) modes.
+- Tests: `AdminMetricsIT` (real numbers after running a mission, eval run round trip, audit filter, admin-only), Playwright
+  `e2e/copilot-admin.spec.ts` (cited answer + passage dialog + steps; dashboard shows non-zero ai_call numbers).

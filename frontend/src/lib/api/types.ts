@@ -33,3 +33,6 @@ export type MatchLine = S["LineResult"];
 export type CopilotAnswer = S["CopilotAnswer"];
 export type Citation = S["Citation"];
 export type ToolCallView = S["ToolCallView"];
+export type MetricsOverview = S["Overview"];
+export type EvalRun = S["EvalRun"];
+export type AuditRow = S["AuditRow"];

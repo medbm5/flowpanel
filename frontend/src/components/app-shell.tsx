@@ -4,6 +4,7 @@ import { LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { CopilotSheet } from "@/components/copilot/copilot-sheet";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -52,6 +53,7 @@ export function AppShell({ children, actions }: { children: React.ReactNode; act
             )}
           </nav>
           <div className="ml-auto flex items-center gap-1">
+            {me.data && me.data.role !== "ADMIN" && <CopilotSheet />}
             {actions}
             <span className="hidden text-right text-sm leading-tight sm:block">
               <span className="block font-medium">{me.data?.displayName}</span>

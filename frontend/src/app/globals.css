@@ -37,11 +37,12 @@
   --input: #d5dae3;
   --ring: var(--cobalt);
   --radius: 0.625rem;
+  /* Categorical chart order (validated: lightness band, chroma, CVD and contrast on #ffffff). */
   --chart-1: #2f4bd6;
-  --chart-2: #1f7a55;
-  --chart-3: #9a6514;
+  --chart-2: #1f9e89;
+  --chart-3: #c2410c;
   --chart-4: #7c3aed;
-  --chart-5: #b4362f;
+  --chart-5: #56607a;
   --sidebar: #ffffff;
   --sidebar-foreground: #0f172a;
   --sidebar-primary: var(--cobalt);
@@ -80,11 +81,12 @@
   --border: #252e4d;
   --input: #2c365a;
   --ring: var(--cobalt);
+  /* Dark steps of the same order, validated on the dark card surface #111830. */
   --chart-1: #7088f2;
-  --chart-2: #4cc38a;
-  --chart-3: #e3ac52;
-  --chart-4: #a78bfa;
-  --chart-5: #f07a71;
+  --chart-2: #2fa892;
+  --chart-3: #d96a30;
+  --chart-4: #9575e8;
+  --chart-5: #9aa3bb;
   --sidebar: #111830;
   --sidebar-foreground: #e7eaf3;
   --sidebar-primary: var(--cobalt);
