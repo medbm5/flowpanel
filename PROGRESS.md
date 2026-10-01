@@ -121,3 +121,16 @@ _None yet._
 - Tests: `TimesheetRulesEngineTest` (each rule, pro-rating, approved hours for both resolution paths), `TimesheetsIT` (seeded mission,
   approve-overtime path = 146 h, return-to-supplier path = 140 h, double resolution 409, tenant scoping). Shared `MissionFlow` test helper
   drives fresh missions through the real endpoints.
+
+### Slice 9 — Invoice phase and three-way match
+- Built: `invoice` table; PDFBox 3.0.8 `InvoicePdf` (renders a synthetic supplier invoice per supplier — the mission's first invoice bills
+  3 h more than approved — and extracts the text back). `POST /missions/{id}/invoice/receive` (PDF → text → LLM structured `InvoiceLines`,
+  validated: amount = hours × rate, total = sum; retried once if not), `ThreeWayMatcher` (pure Java, BigDecimal, HALF_UP to the cent:
+  MATCH / HOURS_MISMATCH / RATE_MISMATCH / AMOUNT_MISMATCH / UNKNOWN_WORKER / MISSING_LINE), French credit-note request drafted by the LLM
+  (`invoice.message`, masked names), `POST .../invoice/request-credit-note` (simulated credit note, re-match passes, CREDIT_NOTE artifact),
+  `POST .../invoice/approve`, `GET /invoices/{id}/pdf`, `POST /invoices/extract` (evals), `GET /supplier/invoices` (own supplier only).
+  Finalizing INVOICE closes the mission; `ClosingService` computes the summary (workers placed, hours approved, amount approved,
+  overbilling avoided, AI steps reviewed, human decisions, AI fields corrected) and a SUMMARY artifact; `GET /missions/{id}/summary`.
+- Tests: `ThreeWayMatcherTest` (exact match, hour mismatch, rate mismatch, rounding, unknown/missing), `InvoicePdfTest` (PDF round trip +
+  extraction + validation), `InvoiceIT` (Intake → Closed end to end with the credit note flow and summary figures, PDF tenant scoping,
+  supplier invoice list, text extraction endpoint).
