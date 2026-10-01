@@ -35,6 +35,18 @@ class SmokeIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void corsAcceptsConfiguredOriginPatternsAndRejectsOthers() throws Exception {
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/auth/demo-login")
+                        .header("Origin", "https://flowpanel-abc123-team.vercel.app")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON).content("{\"persona\":\"claire\"}"))
+                .andExpect(status().isOk());
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/auth/demo-login")
+                        .header("Origin", "https://evil.example")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON).content("{\"persona\":\"claire\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void flywayInstalledVectorAndBtreeGistExtensions() {
         List<String> extensions = jdbc.queryForList("select extname from pg_extension", String.class);
         assertThat(extensions).contains("vector", "btree_gist");

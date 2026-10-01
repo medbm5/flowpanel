@@ -55,7 +55,8 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource(FlowpanelProperties props) {
         CorsConfiguration cfg = new CorsConfiguration();
-        cfg.setAllowedOrigins(props.corsOrigins());
+        // Patterns allow every Vercel preview URL, e.g. https://flowpanel-*-medbm5s-projects.vercel.app
+        cfg.setAllowedOriginPatterns(props.corsOrigins().stream().map(String::strip).filter(o -> !o.isEmpty()).toList());
         cfg.addAllowedMethod("*");
         cfg.addAllowedHeader("*");
         cfg.setAllowCredentials(true);
