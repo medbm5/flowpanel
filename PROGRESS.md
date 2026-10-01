@@ -148,3 +148,15 @@ _None yet._
 - Tests: `ChunkerTest` (+ citation verification), `CopilotIT` (tenant-isolated retrieval with near-identical documents, verbatim
   cross-tenant query, citation validity, not-found, every data tool, out-of-scope mission, **supplier asking for another supplier's rates
   with a prompt injection gets only its own data**, upload + search + duplicate upload).
+
+### Slice 11 — Frontend foundation
+- Built: Next.js 16.3 (App Router, TypeScript strict, ESLint, Tailwind CSS 4) with shadcn/ui (radix base) components (Button, Badge, Card,
+  Dialog, Tabs, Toast via Sonner, Accordion, Sheet, Select, Tooltip, Skeleton...). "Schibsted Grotesk" via `next/font` with a system
+  fallback. Design tokens as CSS variables (cobalt #2F4BD6, ok #1F7A55, warn #9A6514, bad #B4362F, slate neutrals) for light and dark
+  themes (next-themes), mapped onto the shadcn variables; reduced-motion and visible focus rules. Rewrite `/api/:path*` → `${BACKEND_URL}/:path*`.
+  Typed API client: `openapi-typescript` → `src/lib/api/schema.d.ts` (`npm run gen:api`) + `openapi-fetch`, TanStack Query for data.
+  Routes `/` (placeholder), `/login` (persona picker), `/app` (protected), app shell (organization, user, theme toggle, logout).
+  Playwright smoke `e2e/login.spec.ts` (redirect to login, persona login lands on `/app`) passes against the local backend.
+- Deviations: Next.js 16 renamed Middleware to **Proxy**, so the auth-cookie check lives in `src/proxy.ts`. Backend: an OpenAPI customizer marks
+  record properties as required so generated types are strict. `@vitejs/plugin-react` is not used (peer conflict with Babel 8 in its
+  optional deps); Vitest 5 transforms TSX natively. The generated `schema.d.ts` is committed so builds don't need a running backend.
