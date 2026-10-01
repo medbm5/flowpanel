@@ -66,3 +66,18 @@ _None yet._
   protection, retries and metrics are tested identically in both profiles. Mock calls are recorded as `mock/<model>` and priced like the
   model they simulate (dashboard shows realistic numbers); the budget only counts `profile = live` rows. Spring AI is used without its
   auto-configuration so the mock profile never needs a key.
+
+### Slice 5 — Intake phase
+- Built: `POST /missions/{id}/intake/extract` (structured output `OrderExtraction`: 12 fields, each with value + confidence),
+  `POST /missions/{id}/intake/fields/{field}/confirm` (optional corrected value, re-validated), `GET /missions/{id}/intake`,
+  `POST /intake/preview` (stateless, for evals). `OrderValidator` (dates coherent, quantity > 0, rate > 0, reason in
+  ACTIVITY_INCREASE / REPLACEMENT / SEASONAL, replaced employee required for REPLACEMENT, ≤ 18 months). Fields failing validation or under
+  the confidence threshold (0.75, config) are `needsReview`. Real `IntakeGateValidator` (extracted + nothing to review; drives "Needs review"
+  and next action). ORDER artifact DRAFT → CONFIRMED on finalize. Raw-email missions are renamed from the extraction.
+- Mock: `MockIntakeResponder` runs a rule-based French email extractor (`HeuristicOrderExtractor`) on the masked email; hedged values
+  ("normalement", "autour de", "dès que possible") get low confidence, so each template has exactly one flagged field
+  (forklift → end date, pickers → hourly rate, office → start date). Markers `#mock-invalid-once` / `#mock-invalid-always` exercise retries.
+- Tests: `HeuristicOrderExtractorTest`, `OrderValidatorTest`, `IntakeIT` (valid extraction, invalid output + retry, double failure → 502
+  `ai_invalid_output`, low-confidence flow, correction, gate fail and pass, PII masking of the replaced employee, phase/tenant guards).
+- Deviations: added `weeklyHours`, `requiredCertifications` and `overtimeAllowed` to `OrderDraft` because sourcing, timesheets and
+  the rules engines need them. The seeder now runs the real extraction for seeded missions.

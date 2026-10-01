@@ -78,7 +78,7 @@ class MissionIT extends AbstractIntegrationTest {
         long idA = a.get("id").asLong();
         long idB = b.get("id").asLong();
 
-        artifacts.upsert(idA, Phase.INTAKE, ArtifactService.ORDER, a.get("ref").asText(), "CONFIRMABLE", Map.of());
+        completeIntake(idA);
         JsonNode afterA = call(post("/missions/" + idA + "/phases/intake/finalize").cookie(claire), status().isOk());
         assertThat(afterA.get("phase").asText()).isEqualTo("SOURCING");
         assertThat(afterA.get("phases").get(0).get("state").asText()).isEqualTo("DONE");
@@ -86,7 +86,7 @@ class MissionIT extends AbstractIntegrationTest {
 
         assertThat(call(get("/missions/" + idB).cookie(claire), status().isOk()).get("phase").asText()).isEqualTo("INTAKE");
 
-        artifacts.upsert(idB, Phase.INTAKE, ArtifactService.ORDER, b.get("ref").asText(), "CONFIRMABLE", Map.of());
+        completeIntake(idB);
         call(post("/missions/" + idB + "/phases/intake/finalize").cookie(claire), status().isOk());
         artifacts.upsert(idB, Phase.SOURCING, ArtifactService.SHORTLIST, "SL", "READY", Map.of());
         JsonNode afterB = call(post("/missions/" + idB + "/phases/sourcing/finalize").cookie(claire), status().isOk());
@@ -112,6 +112,17 @@ class MissionIT extends AbstractIntegrationTest {
     void templatesAreListed() throws Exception {
         JsonNode templates = call(get("/request-templates").cookie(claire), status().isOk());
         assertThat(templates.findValuesAsText("code")).containsExactly("forklift-lille", "office-paris", "pickers-roubaix");
+    }
+
+    /** Extracts the order and confirms every flagged field. */
+    private void completeIntake(long id) throws Exception {
+        JsonNode view = call(post("/missions/" + id + "/intake/extract").cookie(claire), status().isOk());
+        for (JsonNode f : view.get("fields")) {
+            if (f.get("needsReview").asBoolean()) {
+                call(post("/missions/" + id + "/intake/fields/" + f.get("name").asText() + "/confirm").cookie(claire),
+                        status().isOk());
+            }
+        }
     }
 
     private JsonNode create(Map<String, String> body) throws Exception {

@@ -3,6 +3,7 @@ package com.flowpanel.demo;
 import com.flowpanel.auth.CurrentUser;
 import com.flowpanel.auth.RequestContext;
 import com.flowpanel.auth.Role;
+import com.flowpanel.intake.IntakeService;
 import com.flowpanel.mission.ArtifactService;
 import com.flowpanel.mission.Mission;
 import com.flowpanel.mission.MissionRepository;
@@ -37,18 +38,20 @@ public class DemoSeeder {
     private final MissionService missionService;
     private final RequestTemplateRepository templates;
     private final ArtifactService artifacts;
+    private final IntakeService intake;
     private final RequestContext context;
     private final JdbcTemplate jdbc;
     private final boolean seedOnStartup;
     private final TransactionTemplate tx;
 
     public DemoSeeder(MissionRepository missions, MissionService missionService, RequestTemplateRepository templates,
-                      ArtifactService artifacts, RequestContext context, JdbcTemplate jdbc, TransactionTemplate tx,
+                      ArtifactService artifacts, IntakeService intake, RequestContext context, JdbcTemplate jdbc, TransactionTemplate tx,
                       @Value("${flowpanel.demo.seed-on-startup:true}") boolean seedOnStartup) {
         this.missions = missions;
         this.missionService = missionService;
         this.templates = templates;
         this.artifacts = artifacts;
+        this.intake = intake;
         this.context = context;
         this.jdbc = jdbc;
         this.seedOnStartup = seedOnStartup;
@@ -110,9 +113,16 @@ public class DemoSeeder {
         }
     }
 
+    /** Real AI extraction (mock profile), then the flagged fields are confirmed as the AI proposed them. */
+    private void completeIntake(Mission m) {
+        intake.extract(m.getId()).fields().stream()
+                .filter(IntakeService.FieldView::needsReview)
+                .forEach(f -> intake.confirm(m.getId(), f.name(), new IntakeService.ConfirmRequest(null)));
+    }
+
     private void completePhase(Mission m) {
         switch (m.getPhase()) {
-            case INTAKE -> artifacts.upsert(m.getId(), Phase.INTAKE, ArtifactService.ORDER, m.getRef(), "CONFIRMABLE", Map.of());
+            case INTAKE -> completeIntake(m);
             case SOURCING -> artifacts.upsert(m.getId(), Phase.SOURCING, ArtifactService.SHORTLIST, "SL-" + m.getNumber(), "READY", Map.of());
             case CONTRACTS -> artifacts.upsert(m.getId(), Phase.CONTRACTS, ArtifactService.CONTRACT, "CT-" + m.getNumber() + "-01", "SIGNED", Map.of());
             default -> throw new IllegalStateException("Seeder cannot complete phase " + m.getPhase());
