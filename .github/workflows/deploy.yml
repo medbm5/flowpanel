@@ -1,0 +1,34 @@
+name: Deploy
+
+# Runs only after CI succeeded on a push to main. The frontend deploys through Vercel's Git integration
+# (see docs/deployment.md); this workflow triggers the Render deploy hook for the backend.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Trigger Render deploy
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "RENDER_DEPLOY_HOOK_URL secret is not set; skipping backend deploy." && exit 0
+          fi
+          curl -fsS -X POST "$RENDER_DEPLOY_HOOK_URL?ref=${{ github.event.workflow_run.head_sha }}"
+      - name: Wait for the backend to be healthy
+        env:
+          BACKEND_URL: ${{ vars.BACKEND_URL }}
+        run: |
+          if [ -z "$BACKEND_URL" ]; then echo "BACKEND_URL variable not set; skipping health check." && exit 0; fi
+          for i in $(seq 1 60); do curl -sf "$BACKEND_URL/actuator/health" && exit 0; sleep 15; done
+          echo "Backend did not become healthy in time" && exit 1

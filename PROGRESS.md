@@ -229,3 +229,16 @@ Run log for the BUILD_PLAN.md slices. One entry per slice.
   question terms (so unanswerable questions return "not found").
 - Deviations: Python 3.11 locally (CI uses 3.12); the eval backend runs with a neutral `ci` Spring profile (the `prod` profile's Secure cookie
   would not be sent over plain HTTP).
+
+### Slice 17 — CI/CD and deployment
+- Built: `backend/Dockerfile` (multi-stage: Temurin 21 JDK + Maven wrapper with a cached dependency layer → Temurin 21 JRE, non-root user,
+  `-XX:MaxRAMPercentage=70 -XX:+UseSerialGC`, port from `$PORT`); image built and run locally with `-m 512m`: healthy at ≈ 240 MB.
+  `render.yaml` blueprint (free plan, Docker, `/actuator/health`, env vars without values, `autoDeploy: false`).
+  GitHub Actions: `ci.yml` (backend `./mvnw verify` with Testcontainers; frontend lint / typecheck / test / build; eval suite in mock profile
+  against a pgvector service — the CI gate; Playwright smoke against the mock backend), `live-evals.yml` (manual dispatch only, deployed
+  backend in live profile, `OPENAI_API_KEY` secret, optional judge), `deploy.yml` (on `workflow_run` of CI success on `main`: Render deploy
+  hook + health wait; Vercel deploys through its Git integration). `docs/deployment.md` (Neon with `vector` + `btree_gist`, JDBC URL form,
+  Render, Vercel, OpenAI key with a monthly usage limit as second safety net, free-tier cold start note).
+- Verified locally: `actionlint` 1.7.12 on all workflows (clean); every CI command (backend verify, frontend lint/typecheck/test/build,
+  `npm ci`, eval suite, Playwright suite, Docker build/run). `mvnw` and `run_mock.sh` are committed with the executable bit.
+- Deviation: CI and evals start the jar with a neutral `ci` Spring profile (plain HTTP, non-Secure cookie); production uses `prod`.

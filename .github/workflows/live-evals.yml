@@ -1,0 +1,51 @@
+name: Live evals
+
+# Manual only, to protect OpenAI credits. Runs the eval suite against the deployed backend (AI_PROFILE=live on Render).
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Backend base URL (deployed, live AI profile)
+        required: true
+        default: https://flowpanel-backend.onrender.com
+      suites:
+        description: Suites to run (all, or a comma list of intake, invoice, rag, tools)
+        required: true
+        default: all
+      judge:
+        description: Also score RAG faithfulness with an LLM judge
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  live-evals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r evals/requirements.txt
+      - name: Wake the free-tier backend
+        run: |
+          for i in $(seq 1 30); do curl -sf "${{ inputs.base_url }}/actuator/health" && break; sleep 10; done
+      - name: Run evals (live)
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          BASE_URL: ${{ inputs.base_url }}
+          SUITES: ${{ inputs.suites }}
+          JUDGE: ${{ inputs.judge }}
+        run: |
+          ARGS=(--suite "$SUITES" --base-url "$BASE_URL")
+          if [ "$JUDGE" = "true" ]; then ARGS+=(--judge); fi
+          python -m evals run "${ARGS[@]}"
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-eval-report
+          path: evals/report.json

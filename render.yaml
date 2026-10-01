@@ -1,0 +1,37 @@
+# Render blueprint for the backend (free plan). Secrets are set in the Render dashboard, never committed.
+services:
+  - type: web
+    name: flowpanel-backend
+    runtime: docker
+    plan: free
+    region: frankfurt
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /actuator/health
+    autoDeploy: false # deploys are triggered by .github/workflows/deploy.yml after CI passes
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: DATABASE_URL # jdbc:postgresql://<neon-host>/<db>?sslmode=require
+        sync: false
+      - key: DATABASE_USERNAME
+        sync: false
+      - key: DATABASE_PASSWORD
+        sync: false
+      - key: DB_POOL_SIZE
+        value: "5"
+      - key: AI_PROFILE # mock or live
+        value: mock
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_CHAT_MODEL
+        value: gpt-4o-mini
+      - key: OPENAI_EMBEDDING_MODEL
+        value: text-embedding-3-small
+      - key: AI_DAILY_BUDGET_USD
+        value: "2"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS # the Vercel URL, e.g. https://flowpanel.vercel.app
+        sync: false
