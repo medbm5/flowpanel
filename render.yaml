@@ -34,5 +34,7 @@ services:
         value: "2"
       - key: JWT_SECRET
         generateValue: true
-      - key: CORS_ORIGINS # the Vercel URL, e.g. https://flowpanel.vercel.app
+      # Comma-separated origins, with https://; * patterns allowed (Vercel previews), e.g.
+      # https://flowpanel.vercel.app,https://flowpanel-*-medbm5s-projects.vercel.app
+      - key: CORS_ORIGINS
         sync: false
