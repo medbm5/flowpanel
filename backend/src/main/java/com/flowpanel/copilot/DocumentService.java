@@ -123,6 +123,28 @@ public class DocumentService {
                 vector, tenantId, tenantId, embeddings.model(), vector, limit);
     }
 
+    /**
+     * Re-embeds chunks stored with another embedding model (e.g. after switching AI_PROFILE from mock to live), so
+     * retrieval keeps working. Runs per tenant, in that tenant's scope (for ai_call attribution).
+     */
+    public int reembedStaleChunks(Long tenantId) {
+        record Stale(Long id, String title, String content) {
+        }
+        List<Stale> stale = jdbc.query("""
+                select c.id, d.title, c.content from document_chunk c join document d on d.id = c.document_id
+                where c.tenant_id = ? and c.model <> ? order by c.id
+                """, (rs, i) -> new Stale(rs.getLong(1), rs.getString(2), rs.getString(3)), tenantId, embeddings.model());
+        if (stale.isEmpty()) {
+            return 0;
+        }
+        List<float[]> vectors = embeddings.embedAll(EMBEDDING_FEATURE, stale.stream().map(c -> c.title() + "\n" + c.content()).toList());
+        for (int i = 0; i < stale.size(); i++) {
+            jdbc.update("update document_chunk set embedding = cast(? as vector), model = ? where id = ?",
+                    EmbeddingService.literal(vectors.get(i)), embeddings.model(), stale.get(i).id());
+        }
+        return stale.size();
+    }
+
     @Transactional(readOnly = true)
     public int count(Long tenantId) {
         return jdbc.queryForObject("select count(*) from document where tenant_id = ?", Integer.class, tenantId);

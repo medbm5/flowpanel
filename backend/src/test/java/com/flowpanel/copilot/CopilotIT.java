@@ -54,6 +54,20 @@ class CopilotIT extends AbstractIntegrationTest {
         assertThat(passages).isNotEmpty().allMatch(p -> !p.documentTitle().contains("MétalPro"));
     }
 
+    @Autowired
+    org.springframework.jdbc.core.JdbcTemplate jdbc;
+
+    @Test
+    void chunksEmbeddedWithAnotherModelAreReembeddedAndFoundAgain() throws Exception {
+        jdbc.update("update document_chunk set model = 'old-model' where tenant_id = 1");
+        assertThat(ask(login("claire"), "What is the night work bonus?").get("notFound").asBoolean()).isTrue();
+
+        int n = tx.execute(s -> context.runAs(new CurrentUser(1L, "Claire Dubois", Role.BUYER, 1L, null),
+                () -> documents.reembedStaleChunks(1L)));
+        assertThat(n).isPositive();
+        assertThat(ask(login("claire"), "What is the night work bonus?").get("answer").asText()).contains("25 %");
+    }
+
     @Test
     void everyCitationPointsToARetrievedPassage() throws Exception {
         JsonNode answer = ask(login("claire"), "How fast must suppliers send candidate proposals?");

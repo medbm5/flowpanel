@@ -161,7 +161,7 @@ public class DefaultAiGateway implements AiGateway {
     }
 
     private void guard(String feature, Long missionId, AiCall.Kind kind, String model, String hash) {
-        if (!props.live()) {
+        if (!props.live() || model.startsWith("mock/")) {
             return;
         }
         if (spendGuard.budgetExhausted()) {

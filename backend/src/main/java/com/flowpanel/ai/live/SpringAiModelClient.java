@@ -70,7 +70,7 @@ public class SpringAiModelClient implements AiModelClient {
         if (call.jsonSchema() != null) {
             options.responseFormat(ResponseFormat.builder()
                     .type(ResponseFormat.Type.JSON_SCHEMA)
-                    .jsonSchema(call.jsonSchema())
+                    .jsonSchema(StrictSchema.sanitize(call.jsonSchema()))
                     .build());
         }
         if (!call.tools().isEmpty()) {

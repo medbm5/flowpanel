@@ -50,8 +50,10 @@ public class AiCallRecorder {
         CurrentUser user = context.currentOptional().orElse(null);
         BigDecimal cost = a.status() == AiCall.Status.BUDGET_EXCEEDED || a.status() == AiCall.Status.RATE_LIMITED
                 ? BigDecimal.ZERO : estimateCost(a.model(), a.inputTokens(), a.outputTokens());
+        // Mock calls (also those forced during demo seeding in the live profile) never count against the live budget.
+        String profile = a.model() != null && a.model().startsWith("mock/") ? "mock" : props.profileName();
         AiCall call = repository.save(new AiCall(user == null ? null : user.tenantId(),
-                user == null ? null : user.supplierId(), user == null ? null : user.userId(), a.missionId(), a.feature(), a.kind(), props.profileName(),
+                user == null ? null : user.supplierId(), user == null ? null : user.userId(), a.missionId(), a.feature(), a.kind(), profile,
                 a.model(), a.inputTokens(), a.outputTokens(), a.latencyMs(), cost, a.status(), a.attempt(), a.error(),
                 a.promptHash()));
         Map<String, Object> details = new LinkedHashMap<>();

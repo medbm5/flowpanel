@@ -72,9 +72,20 @@ public class DemoSeeder {
         if (seedOnStartup) {
             tx.executeWithoutResult(status -> seedDocuments());
         }
+        reembedDocuments();
         if (seedOnStartup && missions.count() == 0) {
             tx.executeWithoutResult(status -> seed());
             log.info("Demo data seeded");
+        }
+    }
+
+    /** Keeps document embeddings in line with the active embedding model (mock ↔ live switch). */
+    void reembedDocuments() {
+        for (CurrentUser user : List.of(CLAIRE, MARC)) {
+            Integer n = tx.execute(status -> context.runAs(user, () -> documents.reembedStaleChunks(user.tenantId())));
+            if (n != null && n > 0) {
+                log.info("Re-embedded {} document chunks for tenant {} with the current embedding model", n, user.tenantId());
+            }
         }
     }
 
@@ -130,6 +141,11 @@ public class DemoSeeder {
 
     @Transactional
     public void seed() {
+        // Chat calls use the free deterministic mock while seeding, even in the live profile.
+        com.flowpanel.ai.AiProviderOverride.withMockChat(this::seedMissions);
+    }
+
+    private void seedMissions() {
         context.runAs(CLAIRE, () -> {
             seedTimesheetsMission();
             seedSourcingMission();

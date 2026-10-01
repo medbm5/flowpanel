@@ -20,7 +20,9 @@ public class AiConfig {
     AiModelClient aiModelClient(AiProperties props, ObjectProvider<MockResponder> responderProvider, ObjectMapper mapper) {
         if (props.live()) {
             log.info("AI profile: live (chat={}, embeddings={})", props.chatModel(), props.embeddingModel());
-            return new SpringAiModelClient(props.apiKey(), props.chatModel(), props.embeddingModel());
+            var mock = new MockAiModelClient(responderProvider.orderedStream().toList(), props.chatModel(),
+                    props.embeddingModel(), mapper);
+            return new RoutingModelClient(new SpringAiModelClient(props.apiKey(), props.chatModel(), props.embeddingModel()), mock);
         }
         var responders = responderProvider.orderedStream().toList();
         log.info("AI profile: mock ({} responders)", responders.size());
