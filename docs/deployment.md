@@ -17,23 +17,24 @@ browser ──► Vercel (Next.js, /api/* rewrite) ──► Render (Spring Boot
    CREATE EXTENSION IF NOT EXISTS vector;
    CREATE EXTENSION IF NOT EXISTS btree_gist;
    ```
-3. From *Connection details*, take host, database, user and password. Spring needs the **JDBC** form:
-   `DATABASE_URL=jdbc:postgresql://<host>/<database>?sslmode=require`, plus `DATABASE_USERNAME` and `DATABASE_PASSWORD`.
-   Use the *pooled* host (`-pooler`) and keep `DB_POOL_SIZE` small (5) on the free tier.
+3. From *Connection details*, copy the connection string (pooled host, `-pooler`), e.g.
+   `postgresql://user:password@ep-xxx-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require`.
+   Paste it as-is into `DATABASE_URL`: the backend converts `postgres://` / `postgresql://` URLs to JDBC
+   (`DatabaseUrlEnvironmentPostProcessor`). A `jdbc:postgresql://…` URL with `DATABASE_USERNAME` / `DATABASE_PASSWORD` also works.
+   Keep `DB_POOL_SIZE` small (5) on the free tier.
 
 Flyway creates the schema and the demo seeder fills it on first start.
 
 ## 2. Backend — Render
 
 1. Push the repository to GitHub.
-2. In Render: **New → Blueprint**, select the repository; Render reads [`render.yaml`](../render.yaml) (Docker, free plan,
-   health check `/actuator/health`, `autoDeploy: false`).
+2. Open <https://render.com/deploy?repo=https://github.com/medbm5/flowpanel> (or **New → Blueprint** and select the repository);
+   Render reads [`render.yaml`](../render.yaml) (Docker, free plan, health check `/actuator/health`, `autoDeploy: false`).
 3. Fill the secret env vars when prompted:
 
    | Variable | Value |
    |---|---|
-   | `DATABASE_URL` | `jdbc:postgresql://<neon-host>/<db>?sslmode=require` |
-   | `DATABASE_USERNAME` / `DATABASE_PASSWORD` | Neon credentials |
+   | `DATABASE_URL` | the Neon connection string (`postgresql://…?sslmode=require`) |
    | `AI_PROFILE` | `mock` (default) or `live` |
    | `OPENAI_API_KEY` | only for `live` |
    | `AI_DAILY_BUDGET_USD` | `2` (live calls are refused above this, per UTC day) |
