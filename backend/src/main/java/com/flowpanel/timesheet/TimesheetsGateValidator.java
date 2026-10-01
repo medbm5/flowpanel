@@ -1,20 +1,21 @@
 package com.flowpanel.timesheet;
 
-import com.flowpanel.mission.ArtifactService;
 import com.flowpanel.mission.Mission;
 import com.flowpanel.mission.Phase;
 import com.flowpanel.mission.gate.GateCheck;
 import com.flowpanel.mission.gate.GateValidator;
 import java.util.List;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
+/** Timesheets are done when the checks ran, every anomaly is resolved and the sheets are approved. */
 @Component
 public class TimesheetsGateValidator implements GateValidator {
 
-    private final ArtifactService artifacts;
+    private final TimesheetService timesheets;
 
-    public TimesheetsGateValidator(ArtifactService artifacts) {
-        this.artifacts = artifacts;
+    public TimesheetsGateValidator(@Lazy TimesheetService timesheets) {
+        this.timesheets = timesheets;
     }
 
     @Override
@@ -24,8 +25,14 @@ public class TimesheetsGateValidator implements GateValidator {
 
     @Override
     public List<GateCheck> check(Mission mission) {
-        var found = artifacts.byType(mission.getId(), ArtifactService.TIMESHEETS);
-        boolean passed = !found.isEmpty() && found.stream().allMatch(a -> "APPROVED".equals(a.getStatus()));
-        return List.of(GateCheck.of("timesheets-approved", "Timesheets approved", passed, "Check and approve timesheets"));
+        boolean checked = timesheets.checked(mission.getId());
+        long open = timesheets.openAnomalies(mission.getId());
+        List<Timesheet> sheets = timesheets.forMission(mission.getId());
+        boolean approved = !sheets.isEmpty() && sheets.stream().allMatch(t -> "APPROVED".equals(t.getStatus()));
+        return List.of(
+                GateCheck.of("checked", "Timesheet checks run", checked, "Run the timesheet checks"),
+                new GateCheck("anomalies-resolved", open == 0 ? "All anomalies resolved" : open + " open anomal" + (open == 1 ? "y" : "ies"),
+                        checked && open == 0, "Resolve the timesheet anomaly", open > 0),
+                GateCheck.of("approved", "Timesheets approved", approved, "Approve the timesheets"));
     }
 }

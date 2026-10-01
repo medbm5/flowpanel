@@ -108,3 +108,16 @@ _None yet._
   (generated, no blocking issue → "Needs review", all signed); CONTRACT artifacts DRAFT → SIGNED.
 - Tests: `ContractRulesEngineTest` (each rule pass and fail, fixes), `ContractsIT` (full generate → blocked sign → fix → sign → finalize,
   AI draft restored with the worker name that the provider never saw, double generation, cross-tenant fix → 404).
+
+### Slice 8 — Timesheets phase
+- Built: `timesheet` (daily hours Mon..Sun as jsonb), `timesheet_anomaly`, `timesheet_check_run`. Entering TIMESHEETS generates one
+  supplier-submitted sheet per contract and week (pro-rated partial weeks); the first full week of the first contract is submitted with
+  41 h vs 35 h contracted (seeded anomaly). `TimesheetRulesEngine` (pure Java, BigDecimal): CONTRACTED_HOURS (over contract without
+  agreed overtime, flags the days above the daily schedule), WEEKLY_MAXIMUM (48 h), DAILY_LIMIT (10 h); approved-hours computation.
+  `POST /missions/{id}/timesheets/check` (anomalies + 2-sentence AI explanation `timesheet.explain` from the daily breakdown),
+  `POST /anomalies/{id}/resolve` (`APPROVE_OVERTIME` or `RETURN_TO_SUPPLIER` → simulated corrected sheet), `POST
+  /missions/{id}/timesheets/approve` (approved hours computed in Java), `GET /missions/{id}/timesheets`. Real gate (checked,
+  anomalies resolved → "Needs review", approved); TIMESHEETS artifact SUBMITTED → APPROVED.
+- Tests: `TimesheetRulesEngineTest` (each rule, pro-rating, approved hours for both resolution paths), `TimesheetsIT` (seeded mission,
+  approve-overtime path = 146 h, return-to-supplier path = 140 h, double resolution 409, tenant scoping). Shared `MissionFlow` test helper
+  drives fresh missions through the real endpoints.
