@@ -120,11 +120,6 @@ public final class PiiMasker {
             return sb.toString();
         }
 
-        /** Values that were masked during this session (for assertions and audit). */
-        public Collection<String> maskedValues() {
-            return tokenToValue.values();
-        }
-
         private String replace(String text, Pattern pattern, String kind, String canonical) {
             Matcher m = pattern.matcher(text);
             if (!m.find()) {

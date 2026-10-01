@@ -34,10 +34,6 @@ public record AiPrompt(String feature, Long missionId, String system, String use
         return new AiPrompt(feature, missionId, system, user, facts, tokens, extraNames);
     }
 
-    public AiPrompt withExtraNames(List<String> names) {
-        return new AiPrompt(feature, missionId, system, user, facts, maxTokens, names);
-    }
-
     public AiPrompt withUser(String newUser) {
         return new AiPrompt(feature, missionId, system, newUser, facts, maxTokens, extraNames);
     }

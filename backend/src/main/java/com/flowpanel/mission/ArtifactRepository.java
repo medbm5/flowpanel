@@ -8,7 +8,5 @@ public interface ArtifactRepository extends JpaRepository<Artifact, Long> {
 
     List<Artifact> findByMissionIdOrderByCreatedAtAscIdAsc(Long missionId);
 
-    List<Artifact> findByMissionIdAndType(Long missionId, String type);
-
     Optional<Artifact> findByMissionIdAndTypeAndRef(Long missionId, String type, String ref);
 }

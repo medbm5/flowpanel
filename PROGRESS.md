@@ -8,6 +8,15 @@ Run log for the BUILD_PLAN.md slices. One entry per slice.
   62–76 on the simulated mobile preset when measured on the (busy) local Windows dev machine (TBT dominated by hydration of the motion
   sections). Follow-up: measure on the Vercel deployment, and if still under 90, defer the below-the-fold motion sections with
   `next/dynamic` and drop the `backdrop-blur` on the hero fragments.
+- **Final Slice 18 verification interrupted**: the combined `make test && make eval && npm run build` was stopped by Claude Code because the
+  machine ran low on memory (not a test failure). Before it stopped, all 105 backend unit tests passed. Each step had already passed
+  separately earlier in the run (backend `verify` after Slice 16, `make eval` → PASS, frontend build, the full Playwright suite twice).
+  Slice 18 itself only removed dead code (compile, lint and typecheck re-run clean) and added docs.
+  **Follow-up: re-run `make test && make eval && cd frontend && npm run build` once.**
+- **Not deployed**: Render / Vercel / Neon accounts and the GitHub remote need the owner's credentials. Follow docs/deployment.md;
+  the README live-demo link and screenshots are placeholders.
+- **OpenAI key**: provided during the run and stored only in the gitignored root `.env`. It was used once for the opt-in live smoke test
+  (structured output, tool calling, embeddings: all passing). Rotate it after the demo and set a monthly usage limit.
 
 ## Slices
 
@@ -242,3 +251,20 @@ Run log for the BUILD_PLAN.md slices. One entry per slice.
 - Verified locally: `actionlint` 1.7.12 on all workflows (clean); every CI command (backend verify, frontend lint/typecheck/test/build,
   `npm ci`, eval suite, Playwright suite, Docker build/run). `mvnw` and `run_mock.sh` are committed with the executable bit.
 - Deviation: CI and evals start the jar with a neutral `ci` Spring profile (plain HTTP, non-Secure cookie); production uses `prod`.
+
+### Slice 18 — Documentation and demo polish
+- Built: README (pitch, live-demo and screenshot placeholders, Mermaid architecture, features by phase, run locally in 3 commands, tests
+  and evals, project structure), `docs/architecture.md` (components, request flow, state machine, tenant/supplier scoping, AI gateway
+  sequence, Mermaid ER model), ADRs 0001–0005 (deterministic rules vs LLM, tenant scoping + DB constraints, mock/live profiles, pgvector,
+  evals as a CI gate), `docs/demo-script.md` (3-minute walkthrough + "limits and what I'd do at scale").
+- Final pass: removed unused code (ArtifactService.updateStatus/delete/byType, AuditService.aiIndependent, unused repository methods,
+  PiiMasker.maskedValues, AiPrompt.withExtraNames, 4 unused shadcn components). Fixed the `make seed` target (calls the admin reset
+  endpoint).
+- Verify: see "Blocked / follow-ups". The combined final command was interrupted by memory pressure; each step had passed separately.
+
+## Final summary
+
+- 19 slices (0–18) completed, each committed with the plan's message (plus one tiny `chore(frontend): drop unused import` after Slice 14).
+- Backend: 105 unit tests and 15 integration-test classes (Testcontainers + pgvector). Frontend: 9 Vitest tests and 13 Playwright tests
+  (incl. the Intake → Closed walk). Evals: mock profile PASS (intake 1.00, invoice 1.00/1.00, RAG hit 1.00, citations 1.00, answers 0.91,
+  tools 1.00/1.00).

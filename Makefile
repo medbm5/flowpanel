@@ -1,7 +1,6 @@
 # Flowpanel developer shortcuts. Requires: Docker, Java 21, Node 22+, Python 3.11+.
 SHELL := bash
 BACKEND_URL ?= http://localhost:8080
-MVNW := cd backend && ./mvnw -q
 
 .PHONY: help dev db-up db-down db-reset backend frontend test test-backend test-frontend eval seed
 
@@ -46,4 +45,4 @@ eval:
 
 # Re-seeds the demo data through the admin endpoint (backend must be running).
 seed:
-	python -m evals.seed --base-url $(BACKEND_URL)
+	python -c "from evals.client import Session; print(Session('$(BACKEND_URL)').login('admin').post('/admin/demo/reset'))"

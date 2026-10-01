@@ -11,13 +11,9 @@ import jakarta.servlet.http.Cookie;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 
 class MissionIT extends AbstractIntegrationTest {
-
-    @Autowired
-    ArtifactService artifacts;
 
     Cookie claire;
 

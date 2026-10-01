@@ -34,21 +34,8 @@ public class ArtifactService {
         return repository.save(new Artifact(missionId, phase, type, ref, status, payload));
     }
 
-    public void updateStatus(Long missionId, String type, String status) {
-        repository.findByMissionIdAndType(missionId, type).forEach(a -> a.update(status, null));
-    }
-
-    public void delete(Long missionId, String type, String ref) {
-        repository.findByMissionIdAndTypeAndRef(missionId, type, ref).ifPresent(repository::delete);
-    }
-
     @Transactional(readOnly = true)
     public List<Artifact> forMission(Long missionId) {
         return repository.findByMissionIdOrderByCreatedAtAscIdAsc(missionId);
-    }
-
-    @Transactional(readOnly = true)
-    public List<Artifact> byType(Long missionId, String type) {
-        return repository.findByMissionIdAndType(missionId, type);
     }
 }

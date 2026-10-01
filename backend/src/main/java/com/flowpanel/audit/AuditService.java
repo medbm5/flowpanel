@@ -5,7 +5,6 @@ import com.flowpanel.auth.RequestContext;
 import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /** Writes every AI suggestion and every human decision to {@code audit_event}. */
@@ -35,12 +34,6 @@ public class AuditService {
     @Transactional
     public AuditEvent system(Long missionId, String action, String summary, Map<String, Object> details) {
         return write(ActorKind.SYSTEM, null, missionId, action, summary, details);
-    }
-
-    /** Persists even if the caller's transaction rolls back (used for failed AI calls). */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public AuditEvent aiIndependent(Long missionId, String action, String summary, Map<String, Object> details) {
-        return write(ActorKind.AI, null, missionId, action, summary, details);
     }
 
     /** Explicit tenant, for events on a tenant's mission triggered by a supplier user or the system. */
