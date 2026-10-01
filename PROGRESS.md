@@ -169,3 +169,15 @@ _None yet._
   `/app/admin`. Loading skeletons, empty states with a call to action, ProblemDetail messages in error boxes/toasts.
 - Tests: Vitest + Testing Library (`PhaseProgress`, `MissionBoard`: rows, review tag, empty state, error message, creation adds a row without
   reload); Playwright `e2e/board.spec.ts` against the running backend (board state, new mission, supplier board).
+
+### Slice 13 — Mission workflow screens
+- Built: `/app/missions/[id]` — left phase rail (done ✓ / active / locked with padlock; clicking a locked phase toasts "Finalize <phase>
+  first"), "Other missions" switcher, center workspace, right panel with Artifacts (invoice PDFs linked) and the Audit trail (filter All /
+  AI / People). One component per phase: Intake (email + order draft with confidence bars, flagged fields, confirm / edit), Sourcing
+  (ranked candidate cards with ✓/✗ explanations and AI summary, excluded candidates with reasons incl. "Already placed on ORD-…"),
+  Contracts (per-contract rule checks, one-click fixes, AI draft text, e-signature), Timesheets (hours grid with flagged cells, anomaly
+  callouts with AI explanation, approve overtime / return to supplier, approve), Invoice (three-way match table, AI-drafted French message,
+  credit note, approve, PDF), Closed (summary). Gate panel under the active phase: backend checklist, Finalize disabled until ready;
+  finalized phases are read-only. Every AI-generated element carries the "AI" badge.
+- Tests: Vitest (`GatePanel` disabled/enabled, `PhaseRail` locked toast) and **Playwright `e2e/mission-flow.spec.ts` walking one mission from
+  Intake to Closed against the backend in mock profile** (resets the demo through the admin endpoint first, so it is repeatable).
