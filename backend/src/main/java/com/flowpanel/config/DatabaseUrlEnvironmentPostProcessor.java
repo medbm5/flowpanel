@@ -32,10 +32,22 @@ public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProce
         environment.getPropertySources().addFirst(new MapPropertySource("flowpanelDatabaseUrl", converted));
     }
 
-    static Map<String, Object> convert(String url) {
+    static Map<String, Object> convert(String rawUrl) {
         Map<String, Object> props = new HashMap<>();
-        if (url == null || !(url.startsWith("postgres://") || url.startsWith("postgresql://"))) {
+        String url = clean(rawUrl);
+        if (url == null) {
             return props;
+        }
+        if (url.startsWith("jdbc:")) {
+            // Already a JDBC URL; only normalize it if pasting added whitespace or quotes.
+            if (!url.equals(rawUrl)) {
+                props.put("spring.datasource.url", url);
+            }
+            return props;
+        }
+        if (!(url.startsWith("postgres://") || url.startsWith("postgresql://"))) {
+            throw new IllegalStateException("DATABASE_URL must start with postgres://, postgresql:// or jdbc:postgresql:// "
+                    + "(got a value starting with '" + url.substring(0, Math.min(12, url.length())) + "…')");
         }
         URI uri = URI.create(url);
         StringBuilder jdbc = new StringBuilder("jdbc:postgresql://").append(uri.getHost());
@@ -57,5 +69,23 @@ public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProce
             }
         }
         return props;
+    }
+
+    /** Removes what copy-pasting often adds: surrounding whitespace or quotes, a psql command, or a "DATABASE_URL=" prefix. */
+    static String clean(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        String v = value.strip();
+        if (v.startsWith("psql ")) {
+            v = v.substring(5).strip();
+        }
+        if (v.startsWith("DATABASE_URL=")) {
+            v = v.substring("DATABASE_URL=".length()).strip();
+        }
+        while (v.length() >= 2 && (v.startsWith("\"") || v.startsWith("'")) && v.charAt(v.length() - 1) == v.charAt(0)) {
+            v = v.substring(1, v.length() - 1).strip();
+        }
+        return v;
     }
 }

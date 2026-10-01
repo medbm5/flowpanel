@@ -29,4 +29,25 @@ class DatabaseUrlEnvironmentPostProcessorTest {
         assertThat(DatabaseUrlEnvironmentPostProcessor.convert("jdbc:postgresql://localhost:5433/flowpanel")).isEmpty();
         assertThat(DatabaseUrlEnvironmentPostProcessor.convert(null)).isEmpty();
     }
+
+    @Test
+    void copyPasteArtifactsAreRemoved() {
+        String expected = "jdbc:postgresql://ep-x.eu-central-1.aws.neon.tech/flowpanel?sslmode=require";
+        for (String pasted : new String[] {
+                "  postgresql://u:p@ep-x.eu-central-1.aws.neon.tech/flowpanel?sslmode=require\n",
+                "'postgresql://u:p@ep-x.eu-central-1.aws.neon.tech/flowpanel?sslmode=require'",
+                "\"postgresql://u:p@ep-x.eu-central-1.aws.neon.tech/flowpanel?sslmode=require\"",
+                "DATABASE_URL=postgresql://u:p@ep-x.eu-central-1.aws.neon.tech/flowpanel?sslmode=require",
+                "psql 'postgresql://u:p@ep-x.eu-central-1.aws.neon.tech/flowpanel?sslmode=require'"}) {
+            assertThat(DatabaseUrlEnvironmentPostProcessor.convert(pasted).get("spring.datasource.url")).isEqualTo(expected);
+        }
+        assertThat(DatabaseUrlEnvironmentPostProcessor.convert(" jdbc:postgresql://h/db ").get("spring.datasource.url"))
+                .isEqualTo("jdbc:postgresql://h/db");
+    }
+
+    @Test
+    void unknownFormatsFailWithAClearMessage() {
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> DatabaseUrlEnvironmentPostProcessor.convert("mysql://h/db"))
+                .hasMessageContaining("DATABASE_URL must start with");
+    }
 }
