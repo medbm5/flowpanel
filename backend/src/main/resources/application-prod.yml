@@ -1,0 +1,6 @@
+flowpanel:
+  jwt:
+    secure-cookie: true
+logging:
+  level:
+    root: INFO

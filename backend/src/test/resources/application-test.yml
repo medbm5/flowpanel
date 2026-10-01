@@ -1,0 +1,9 @@
+flowpanel:
+  ai:
+    profile: mock
+  jwt:
+    secret: test-only-jwt-secret-0123456789-0123456789-abcdef
+logging:
+  level:
+    org.testcontainers: WARN
+    com.github.dockerjava: WARN
