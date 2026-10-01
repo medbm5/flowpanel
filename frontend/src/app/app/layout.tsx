@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AppShell } from "@/components/app-shell";
+import { Providers } from "@/components/providers";
 
 export const metadata: Metadata = {
   title: "App",
@@ -7,5 +8,9 @@ export const metadata: Metadata = {
 };
 
 export default function ProductLayout({ children }: { children: React.ReactNode }) {
-  return <AppShell>{children}</AppShell>;
+  return (
+    <Providers>
+      <AppShell>{children}</AppShell>
+    </Providers>
+  );
 }

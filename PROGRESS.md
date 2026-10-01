@@ -4,7 +4,10 @@ Run log for the BUILD_PLAN.md slices. One entry per slice.
 
 ## Blocked / follow-ups
 
-_None yet._
+- **Landing page Lighthouse, mobile preset**: Accessibility 100, SEO 100, Best Practices 100; Performance **90 on the desktop preset** but
+  62–76 on the simulated mobile preset when measured on the (busy) local Windows dev machine (TBT dominated by hydration of the motion
+  sections). Follow-up: measure on the Vercel deployment, and if still under 90, defer the below-the-fold motion sections with
+  `next/dynamic` and drop the `backdrop-blur` on the hero fragments.
 
 ## Slices
 
@@ -192,3 +195,20 @@ _None yet._
 - Chart palette (categorical order) validated with the dataviz validator in light (#ffffff) and dark (#111830) modes.
 - Tests: `AdminMetricsIT` (real numbers after running a mission, eval run round trip, audit filter, admin-only), Playwright
   `e2e/copilot-admin.spec.ts` (cited answer + passage dialog + steps; dashboard shows non-zero ai_call numbers).
+
+### Slice 15 — Landing page (Webflow-style)
+- Built: `/` with navbar (anchors, Sign in, CTA; turns solid with a border on scroll; mobile menu), hero (large headline, two CTAs, layered
+  parallax composition of real UI fragments — mission row, gate checklist, candidate card, three-way match row — each layer at its own scroll
+  speed and following the pointer; stacked and static below 768px), "ten inboxes" problem strip (scattered email/PDF chips converge into a
+  mission row, scroll-linked), sticky How-it-works (pinned 6-phase rail, crossfading visual per phase; stacked list below 1024px),
+  "AI that stays accountable" (three principles with live fragments), Security & compliance (text-led + one SVG data-flow diagram),
+  metrics band (count-up when in view, labelled as demo figures), testimonials marquee (pauses on hover/focus, "Illustrative testimonials"),
+  FAQ (shadcn Accordion, 8 questions), final CTA (demo resets daily, synthetic data), footer ("Demo project, not affiliated with Pixid").
+  Framer Motion `useScroll` / `useTransform` / `whileInView` (one reveal per section), loaded through `LazyMotion`; all motion off under
+  `prefers-reduced-motion`. Metadata, Open Graph image (`opengraph-image.tsx`), `robots.txt`, `sitemap.xml`.
+- Tests: Playwright `e2e/landing.spec.ts` (loads `/`, opens an FAQ item, "Try the live demo" → `/login`; no horizontal overflow at 360 / 768 /
+  1440 px in light and dark). Screenshots reviewed at each width.
+- Deviations: Lenis smooth scrolling not added (CSS `scroll-behavior: smooth` instead, to keep JS small). No raster images are used, so
+  `next/image` isn't needed. Query/toast providers moved from the root layout into `/app` and `/login` layouts so the landing page doesn't
+  load them. `framer-motion` is pinned to 13.4.6 with `motion-dom` 13.4.5 via npm overrides: 13.5.0 was published mid-run with a missing
+  export / unpublished tarball.

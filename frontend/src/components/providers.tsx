@@ -1,12 +1,12 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ThemeProvider } from "next-themes";
 import { useState } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ApiError } from "@/lib/api/client";
 
+/** Data, tooltips and toasts for the product app and the login page (not loaded by the landing page). */
 export function Providers({ children }: { children: React.ReactNode }) {
   const [client] = useState(
     () =>
@@ -21,13 +21,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
       }),
   );
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-      <QueryClientProvider client={client}>
-        <TooltipProvider delayDuration={200}>
-          {children}
-          <Toaster richColors closeButton position="bottom-right" />
-        </TooltipProvider>
-      </QueryClientProvider>
-    </ThemeProvider>
+    <QueryClientProvider client={client}>
+      <TooltipProvider delayDuration={200}>
+        {children}
+        <Toaster richColors closeButton position="bottom-right" />
+      </TooltipProvider>
+    </QueryClientProvider>
   );
 }

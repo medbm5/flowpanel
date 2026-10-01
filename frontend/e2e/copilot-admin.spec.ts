@@ -10,7 +10,7 @@ test("copilot answers a policy question with a verified citation", async ({ page
   await expect(answer).toContainText("25 %");
   await answer.getByTestId("citation-chip").first().click();
   await expect(page.getByRole("dialog").last()).toContainText("Night work policy");
-  await page.keyboard.press("Escape");
+  await page.getByRole("dialog").last().getByRole("button", { name: "Close" }).click();
   await answer.getByTestId("copilot-steps").click();
   await expect(answer).toContainText("searchDocuments");
 });

@@ -1,16 +1,30 @@
-import Link from "next/link";
-import { Logo } from "@/components/logo";
-import { Button } from "@/components/ui/button";
+import { Footer } from "@/components/landing/footer";
+import { Hero } from "@/components/landing/hero";
+import { HowItWorks } from "@/components/landing/how-it-works";
+import { MotionProvider } from "@/components/landing/motion-provider";
+import { Navbar } from "@/components/landing/navbar";
+import { ProblemStrip } from "@/components/landing/problem-strip";
+import { Faq, FinalCta, Metrics, Principles, Security, Testimonials } from "@/components/landing/sections";
 
-/** Placeholder; the marketing landing page is built in Slice 15. */
-export default function HomePage() {
+export default function LandingPage() {
   return (
-    <main className="mx-auto flex min-h-dvh max-w-3xl flex-col justify-center gap-6 px-4">
-      <Logo />
-      <h1 className="text-4xl font-semibold tracking-tight">From the first email to the last invoice, one workflow.</h1>
-      <Button asChild size="lg" className="w-fit">
-        <Link href="/login">Try the live demo</Link>
-      </Button>
-    </main>
+    <MotionProvider>
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-md focus:bg-card focus:px-3 focus:py-2">
+        Skip to content
+      </a>
+      <Navbar />
+      <main id="main">
+        <Hero />
+        <ProblemStrip />
+        <HowItWorks />
+        <Principles />
+        <Security />
+        <Metrics />
+        <Testimonials />
+        <Faq />
+        <FinalCta />
+      </main>
+      <Footer />
+    </MotionProvider>
   );
 }
