@@ -4,6 +4,102 @@
  */
 
 export interface paths {
+    "/supplier/workers/{workerId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["updateWorker"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/supplier/timesheets/{timesheetId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["updateTimesheet"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/supplier/workers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["workers"];
+        put?: never;
+        post: operations["createWorker"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/supplier/orders/{missionId}/proposals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["propose"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/supplier/invoices/{invoiceId}/credit-note": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["creditNote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/supplier/contracts/{contractId}/sign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["sign"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/missions": {
         parameters: {
             query?: never;
@@ -189,7 +285,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["sign"];
+        post: operations["sign_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -452,6 +548,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/supplier/orders/{missionId}/workspace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["order_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/supplier/invoices": {
         parameters: {
             query?: never;
@@ -460,6 +572,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["invoices"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/supplier/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["dashboard"];
         put?: never;
         post?: never;
         delete?: never;
@@ -740,10 +868,281 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/supplier/orders/{missionId}/proposals/{candidateId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["withdraw"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        WorkerForm: {
+            firstName?: string;
+            lastName?: string;
+            email?: string;
+            phone?: string;
+            city?: string;
+            skills?: string[];
+            certifications?: string[];
+            /** Format: int32 */
+            experienceYears?: number;
+            /** Format: date */
+            availableFrom?: string;
+            /** Format: date */
+            availableTo?: string;
+            profile?: string;
+        };
+        WorkerView: {
+            /** Format: int64 */
+            id: number;
+            firstName: string;
+            lastName: string;
+            email: string;
+            phone: string;
+            city: string;
+            skills: string[];
+            certifications: string[];
+            /** Format: int32 */
+            experienceYears: number;
+            /** Format: date */
+            availableFrom: string;
+            /** Format: date */
+            availableTo: string;
+            profile: string;
+            /** Format: int32 */
+            activePlacements: number;
+            /** Format: date */
+            placedUntil: string;
+        };
+        TimesheetUpdate: {
+            dailyHours?: number[];
+        };
+        TimesheetView: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            contractId: number;
+            contractRef: string;
+            /** Format: int64 */
+            workerId: number;
+            workerName: string;
+            supplierName: string;
+            /** Format: date */
+            weekStart: string;
+            dailyHours: number[];
+            total: number;
+            contractedHours: number;
+            status: string;
+            approvedHours: number;
+            flaggedDays: number[];
+        };
+        ProposeRequest: {
+            /** Format: int64 */
+            workerId?: number;
+        };
+        AnomalyView: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            timesheetId: number;
+            workerName: string;
+            /** Format: date */
+            weekStart: string;
+            ruleId: string;
+            message: string;
+            expectedHours: number;
+            actualHours: number;
+            flaggedDays: number[];
+            aiExplanation: string;
+            status: string;
+            /** @enum {string} */
+            resolution: "APPROVE_OVERTIME" | "RETURN_TO_SUPPLIER";
+            /** Format: date-time */
+            resolvedAt: string;
+        };
+        CandidateView: {
+            /** Format: int64 */
+            candidateId: number;
+            /** Format: int64 */
+            workerId: number;
+            workerName: string;
+            supplierName: string;
+            city: string;
+            /** Format: int32 */
+            rank: number;
+            /** Format: double */
+            score: number;
+            /** Format: double */
+            similarity: number;
+            /** Format: double */
+            distanceKm: number;
+            /** Format: int32 */
+            experienceYears: number;
+            certifications: string[];
+            skills: string[];
+            eligible: boolean;
+            exclusionReasons: string[];
+            explanation: components["schemas"]["Item"][];
+            aiSummary: string;
+            selected: boolean;
+        };
+        ContractView: {
+            /** Format: int64 */
+            id: number;
+            ref: string;
+            workerName: string;
+            supplierName: string;
+            position: string;
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate: string;
+            hourlyRate: number;
+            weeklyHours: number;
+            overtimeAllowed: boolean;
+            legalReason: string;
+            replacedEmployee: string;
+            attachedCertificates: string[];
+            content: string;
+            aiDrafted: boolean;
+            status: string;
+            /** Format: date-time */
+            signedByClientAt: string;
+            /** Format: date-time */
+            signedBySupplierAt: string;
+            checks: components["schemas"]["RuleResult"][];
+            blocking: boolean;
+        };
+        InvoiceLines: {
+            invoiceNumber: string;
+            supplierName: string;
+            lines: components["schemas"]["Line"][];
+            totalExclTax: number;
+        };
+        InvoiceView: {
+            /** Format: int64 */
+            id: number;
+            ref: string;
+            supplierName: string;
+            status: string;
+            extraction: components["schemas"]["InvoiceLines"];
+            aiExtracted: boolean;
+            match: components["schemas"]["Result"];
+            aiMessageDraft: string;
+            creditNoteRef: string;
+            creditNoteAmount: number;
+            creditNote: {
+                [key: string]: unknown;
+            };
+            extractedText: string;
+        };
+        Item: {
+            ok: boolean;
+            text: string;
+        };
+        Line: {
+            workerName: string;
+            hours: number;
+            hourlyRate: number;
+            amount: number;
+        };
+        LineResult: {
+            workerName: string;
+            /** @enum {string} */
+            status: "MATCH" | "HOURS_MISMATCH" | "RATE_MISMATCH" | "AMOUNT_MISMATCH" | "UNKNOWN_WORKER" | "MISSING_LINE";
+            expectedHours: number;
+            invoicedHours: number;
+            expectedRate: number;
+            invoicedRate: number;
+            expectedAmount: number;
+            invoicedAmount: number;
+            delta: number;
+            message: string;
+        };
+        OrderSummary: {
+            /** Format: int64 */
+            missionId: number;
+            ref: string;
+            client: string;
+            title: string;
+            site: string;
+            /** @enum {string} */
+            phase: "INTAKE" | "SOURCING" | "CONTRACTS" | "TIMESHEETS" | "INVOICE" | "CLOSED";
+            position: string;
+            /** Format: int32 */
+            quantity: number;
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate: string;
+            /** Format: int32 */
+            myProposals: number;
+            /** Format: int32 */
+            myPlacements: number;
+        };
+        PlacementView: {
+            /** Format: int64 */
+            workerId: number;
+            workerName: string;
+            /** Format: date */
+            start: string;
+            /** Format: date */
+            end: string;
+        };
+        Result: {
+            lines: components["schemas"]["LineResult"][];
+            expectedTotal: number;
+            invoicedTotal: number;
+            overbilled: number;
+        };
+        RuleResult: {
+            ruleId: string;
+            label: string;
+            passed: boolean;
+            blocking: boolean;
+            autoFixable: boolean;
+            message: string;
+        };
+        Terms: {
+            position: string;
+            /** Format: int32 */
+            quantity: number;
+            site: string;
+            startDate: string;
+            endDate: string;
+            schedule: string;
+            weeklyHours: number;
+            hourlyRate: number;
+            legalReason: string;
+            requiredCertifications: string[];
+            overtimeAllowed: boolean;
+        };
+        Workspace: {
+            order: components["schemas"]["OrderSummary"];
+            terms: components["schemas"]["Terms"];
+            canPropose: boolean;
+            canSignContracts: boolean;
+            canEditTimesheets: boolean;
+            canIssueCreditNotes: boolean;
+            proposals: components["schemas"]["CandidateView"][];
+            placements: components["schemas"]["PlacementView"][];
+            contracts: components["schemas"]["ContractView"][];
+            timesheets: components["schemas"]["TimesheetView"][];
+            anomalies: components["schemas"]["AnomalyView"][];
+            invoices: components["schemas"]["InvoiceView"][];
+        };
         CreateMissionRequest: {
             templateCode?: string;
             emailText?: string;
@@ -817,45 +1216,6 @@ export interface components {
             /** Format: int32 */
             total: number;
         };
-        AnomalyView: {
-            /** Format: int64 */
-            id: number;
-            /** Format: int64 */
-            timesheetId: number;
-            workerName: string;
-            /** Format: date */
-            weekStart: string;
-            ruleId: string;
-            message: string;
-            expectedHours: number;
-            actualHours: number;
-            flaggedDays: number[];
-            aiExplanation: string;
-            status: string;
-            /** @enum {string} */
-            resolution: "APPROVE_OVERTIME" | "RETURN_TO_SUPPLIER";
-            /** Format: date-time */
-            resolvedAt: string;
-        };
-        TimesheetView: {
-            /** Format: int64 */
-            id: number;
-            /** Format: int64 */
-            contractId: number;
-            contractRef: string;
-            /** Format: int64 */
-            workerId: number;
-            workerName: string;
-            supplierName: string;
-            /** Format: date */
-            weekStart: string;
-            dailyHours: number[];
-            total: number;
-            contractedHours: number;
-            status: string;
-            approvedHours: number;
-            flaggedDays: number[];
-        };
         TimesheetsView: {
             /** Format: int64 */
             missionId: number;
@@ -875,36 +1235,6 @@ export interface components {
             submitted: number;
             approved: number;
         };
-        CandidateView: {
-            /** Format: int64 */
-            candidateId: number;
-            /** Format: int64 */
-            workerId: number;
-            workerName: string;
-            supplierName: string;
-            city: string;
-            /** Format: int32 */
-            rank: number;
-            /** Format: double */
-            score: number;
-            /** Format: double */
-            similarity: number;
-            /** Format: double */
-            distanceKm: number;
-            /** Format: int32 */
-            experienceYears: number;
-            certifications: string[];
-            skills: string[];
-            eligible: boolean;
-            exclusionReasons: string[];
-            explanation: components["schemas"]["Item"][];
-            aiSummary: string;
-            selected: boolean;
-        };
-        Item: {
-            ok: boolean;
-            text: string;
-        };
         SourcingView: {
             /** Format: int64 */
             missionId: number;
@@ -920,29 +1250,6 @@ export interface components {
             candidates: components["schemas"]["CandidateView"][];
             excluded: components["schemas"]["CandidateView"][];
         };
-        InvoiceLines: {
-            invoiceNumber: string;
-            supplierName: string;
-            lines: components["schemas"]["Line"][];
-            totalExclTax: number;
-        };
-        InvoiceView: {
-            /** Format: int64 */
-            id: number;
-            ref: string;
-            supplierName: string;
-            status: string;
-            extraction: components["schemas"]["InvoiceLines"];
-            aiExtracted: boolean;
-            match: components["schemas"]["Result"];
-            aiMessageDraft: string;
-            creditNoteRef: string;
-            creditNoteAmount: number;
-            creditNote: {
-                [key: string]: unknown;
-            };
-            extractedText: string;
-        };
         InvoicesView: {
             /** Format: int64 */
             missionId: number;
@@ -952,31 +1259,6 @@ export interface components {
             expectedTotal: number;
             invoicedTotal: number;
             creditNotes: number;
-        };
-        Line: {
-            workerName: string;
-            hours: number;
-            hourlyRate: number;
-            amount: number;
-        };
-        LineResult: {
-            workerName: string;
-            /** @enum {string} */
-            status: "MATCH" | "HOURS_MISMATCH" | "RATE_MISMATCH" | "AMOUNT_MISMATCH" | "UNKNOWN_WORKER" | "MISSING_LINE";
-            expectedHours: number;
-            invoicedHours: number;
-            expectedRate: number;
-            invoicedRate: number;
-            expectedAmount: number;
-            invoicedAmount: number;
-            delta: number;
-            message: string;
-        };
-        Result: {
-            lines: components["schemas"]["LineResult"][];
-            expectedTotal: number;
-            invoicedTotal: number;
-            overbilled: number;
         };
         ConfirmRequest: {
             value?: string;
@@ -1007,33 +1289,6 @@ export interface components {
             confidenceThreshold: number;
             fields: components["schemas"]["FieldView"][];
         };
-        ContractView: {
-            /** Format: int64 */
-            id: number;
-            ref: string;
-            workerName: string;
-            supplierName: string;
-            position: string;
-            /** Format: date */
-            startDate: string;
-            /** Format: date */
-            endDate: string;
-            hourlyRate: number;
-            weeklyHours: number;
-            overtimeAllowed: boolean;
-            legalReason: string;
-            replacedEmployee: string;
-            attachedCertificates: string[];
-            content: string;
-            aiDrafted: boolean;
-            status: string;
-            /** Format: date-time */
-            signedByClientAt: string;
-            /** Format: date-time */
-            signedBySupplierAt: string;
-            checks: components["schemas"]["RuleResult"][];
-            blocking: boolean;
-        };
         ContractsView: {
             /** Format: int64 */
             missionId: number;
@@ -1042,14 +1297,6 @@ export interface components {
             /** Format: int32 */
             placements: number;
             contracts: components["schemas"]["ContractView"][];
-        };
-        RuleResult: {
-            ruleId: string;
-            label: string;
-            passed: boolean;
-            blocking: boolean;
-            autoFixable: boolean;
-            message: string;
         };
         ExtractRequest: {
             text?: string;
@@ -1168,40 +1415,14 @@ export interface components {
             code: string;
             name: string;
         };
-        OrderSummary: {
-            /** Format: int64 */
-            missionId: number;
-            ref: string;
-            client: string;
-            title: string;
-            site: string;
-            /** @enum {string} */
-            phase: "INTAKE" | "SOURCING" | "CONTRACTS" | "TIMESHEETS" | "INVOICE" | "CLOSED";
-            position: string;
-            /** Format: int32 */
-            quantity: number;
-            /** Format: date */
-            startDate: string;
-            /** Format: date */
-            endDate: string;
-            /** Format: int32 */
-            myProposals: number;
-            /** Format: int32 */
-            myPlacements: number;
+        PoolView: {
+            workers: components["schemas"]["WorkerView"][];
+            cities: string[];
         };
         OrderDetail: {
             order: components["schemas"]["OrderSummary"];
             myProposals: components["schemas"]["CandidateView"][];
             myPlacements: components["schemas"]["PlacementView"][];
-        };
-        PlacementView: {
-            /** Format: int64 */
-            workerId: number;
-            workerName: string;
-            /** Format: date */
-            start: string;
-            /** Format: date */
-            end: string;
         };
         SupplierInvoice: {
             /** Format: int64 */
@@ -1214,6 +1435,31 @@ export interface components {
             creditNoteRef: string;
             creditNoteAmount: number;
             payable: number;
+        };
+        Dashboard: {
+            /** Format: int32 */
+            openOrders: number;
+            /** Format: int32 */
+            ordersToStaff: number;
+            /** Format: int32 */
+            activePlacements: number;
+            /** Format: int32 */
+            contractsToSign: number;
+            /** Format: int32 */
+            timesheetsToFix: number;
+            /** Format: int32 */
+            invoicesToCredit: number;
+            /** Format: int32 */
+            workers: number;
+            todo: components["schemas"]["TodoItem"][];
+        };
+        TodoItem: {
+            /** Format: int64 */
+            missionId: number;
+            missionRef: string;
+            client: string;
+            kind: string;
+            label: string;
         };
         TemplateView: {
             code: string;
@@ -1479,6 +1725,172 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    updateWorker: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workerId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkerForm"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkerView"];
+                };
+            };
+        };
+    };
+    updateTimesheet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                timesheetId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TimesheetUpdate"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimesheetView"];
+                };
+            };
+        };
+    };
+    workers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PoolView"];
+                };
+            };
+        };
+    };
+    createWorker: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkerForm"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkerView"];
+                };
+            };
+        };
+    };
+    propose: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                missionId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProposeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Workspace"];
+                };
+            };
+        };
+    };
+    creditNote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoiceId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceView"];
+                };
+            };
+        };
+    };
+    sign: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                contractId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractView"];
+                };
+            };
+        };
+    };
     list: {
         parameters: {
             query?: {
@@ -1775,7 +2187,7 @@ export interface operations {
             };
         };
     };
-    sign: {
+    sign_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -2181,6 +2593,28 @@ export interface operations {
             };
         };
     };
+    order_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                missionId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Workspace"];
+                };
+            };
+        };
+    };
     invoices: {
         parameters: {
             query?: never;
@@ -2197,6 +2631,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SupplierInvoice"][];
+                };
+            };
+        };
+    };
+    dashboard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Dashboard"];
                 };
             };
         };
@@ -2569,6 +3023,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AuditRow"][];
+                };
+            };
+        };
+    };
+    withdraw: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                missionId: number;
+                candidateId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Workspace"];
                 };
             };
         };

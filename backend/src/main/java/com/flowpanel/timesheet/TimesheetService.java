@@ -233,6 +233,62 @@ public class TimesheetService {
     }
 
     /** Approves every sheet; approved hours are computed here, in Java, from the (possibly corrected) daily hours. */
+    /**
+     * The supplier submits (or corrects) the hours of one of its sheets from the portal. Any earlier check of that sheet is
+     * discarded, so the client has to run the checks again before approving.
+     */
+    public TimesheetView updateBySupplier(Mission m, Timesheet t, List<BigDecimal> dailyHours) {
+        if (m.getPhase() != Phase.TIMESHEETS) {
+            throw new ConflictException("Timesheets can only be edited during the Timesheets phase");
+        }
+        if ("APPROVED".equals(t.getStatus())) {
+            throw new ConflictException("This timesheet is already approved by the client");
+        }
+        if (dailyHours == null || dailyHours.size() != 7) {
+            throw new BadRequestException("dailyHours must contain 7 values (Monday to Sunday)");
+        }
+        for (BigDecimal h : dailyHours) {
+            if (h == null || h.signum() < 0 || h.compareTo(BigDecimal.valueOf(24)) > 0) {
+                throw new BadRequestException("Each day must be between 0 and 24 hours");
+            }
+        }
+        BigDecimal before = t.total();
+        t.correct(dailyHours.stream().map(h -> h.setScale(2, java.math.RoundingMode.HALF_UP)).toList());
+        anomalies.deleteAll(anomalies.findByTimesheetId(t.getId()).stream().filter(TimesheetAnomaly::isOpen).toList());
+        jdbc.update("delete from timesheet_check_run where mission_id = ?", m.getId());
+        audit.record(ActorKind.HUMAN, m.getTenantId(), m.getId(), "timesheet.submitted.supplier",
+                tenants.supplierName(t.getSupplierId()) + " updated the timesheet of " + workerName(t.getWorkerId()) + " (week of "
+                        + t.getWeekStart() + "): " + TimesheetRulesEngine.fmt(before) + " h → "
+                        + TimesheetRulesEngine.fmt(t.total()) + " h",
+                Map.of("timesheetId", t.getId()));
+        m.touch();
+        return supplierViews(m.getId(), t.getSupplierId()).stream().filter(v -> v.id().equals(t.getId())).findFirst()
+                .orElseThrow();
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.Optional<Timesheet> find(Long timesheetId) {
+        return timesheets.findById(timesheetId);
+    }
+
+    /** The sheets of one supplier on a mission, with their open anomalies flagged. */
+    @Transactional(readOnly = true)
+    public List<TimesheetView> supplierViews(Long missionId, Long supplierId) {
+        Mission m = missions.getAny(missionId);
+        List<Long> mine = forMission(missionId).stream().filter(t -> t.getSupplierId().equals(supplierId))
+                .map(Timesheet::getId).toList();
+        return toView(m).timesheets().stream().filter(v -> mine.contains(v.id())).toList();
+    }
+
+    /** Anomalies on one supplier's sheets. */
+    @Transactional(readOnly = true)
+    public List<AnomalyView> supplierAnomalies(Long missionId, Long supplierId) {
+        Mission m = missions.getAny(missionId);
+        List<Long> mine = forMission(missionId).stream().filter(t -> t.getSupplierId().equals(supplierId))
+                .map(Timesheet::getId).toList();
+        return toView(m).anomalies().stream().filter(a -> mine.contains(a.timesheetId())).toList();
+    }
+
     public TimesheetsView approve(Long missionId) {
         Mission m = missions.requireCurrentPhase(missionId, Phase.TIMESHEETS);
         if (!checked(m.getId())) {

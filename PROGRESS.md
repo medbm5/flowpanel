@@ -279,3 +279,20 @@ Run log for the BUILD_PLAN.md slices. One entry per slice.
   Typed values are now normalized server-side (`OrderValidator.normalize`: currency/units stripped, comma → dot, dd/mm/yyyy → ISO,
   oui/non → true/false), and the field editor keeps the input open with the error shown inline (Enter saves, Escape cancels).
   Tests: `OrderValidatorTest.typedValuesAreNormalized`, `IntakeIT`, `e2e/intake-edit.spec.ts`.
+
+### Follow-up — Interactive supplier (staffing agency) portal
+- The supplier side was read-only (agency actions were simulated). Agencies can now:
+  - manage their **worker pool** (`/app/workers`: add / edit workers, skills, certifications, availability, city; placement status);
+  - **propose** their own workers on orders published to them and **withdraw** unselected proposals — the same hard rules and score
+    apply, the proposal appears in the client's ranked shortlist (`POST|DELETE /supplier/orders/{id}/proposals`);
+  - **sign their contracts** (agency side; blocked while a compliance issue is open; the client signature completes it);
+  - **submit / correct weekly hours** (`PUT /supplier/timesheets/{id}`), which discards the earlier check so the client re-checks;
+  - **issue credit notes** on mismatched invoices (`POST /supplier/invoices/{id}/credit-note`) and download their invoice PDFs;
+  - see a **to-do dashboard** (orders to staff, contracts to sign, flagged timesheets, invoices to credit) and an order workspace with
+    Order / Proposals / Contracts / Timesheets / Invoices tabs (`/app/orders/[id]`).
+  Every action is scoped to the caller's agency (404 otherwise) and written to the client's mission audit trail.
+- The client-side simulation stays as a fallback so the buyer demo still runs end to end alone (auto-proposals at publish, simulated
+  agency signature if the agency hasn't signed, automatic corrected sheet on "return to supplier", credit note on request).
+- "Reset demo data" now also restores the original worker pool.
+- Tests: `SupplierPortalIT` (pool isolation, propose / withdraw / cross-agency 404, contract signature, timesheet correction and
+  re-check, credit note), `DemoResetIT` (pool restored), `e2e/supplier-portal.spec.ts`.

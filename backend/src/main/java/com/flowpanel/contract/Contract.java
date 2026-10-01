@@ -84,12 +84,24 @@ public class Contract {
         this.contentAiCallId = aiCallId;
     }
 
+    /** Client signature; the supplier's e-signature is simulated if the agency has not signed yet. */
     public void sign() {
         Instant now = Instant.now();
         this.signedByClientAt = now;
-        this.signedBySupplierAt = now;
+        if (this.signedBySupplierAt == null) {
+            this.signedBySupplierAt = now;
+        }
         this.status = "SIGNED";
         this.updatedAt = now;
+    }
+
+    /** The staffing agency signs its side from the supplier portal. */
+    public void signBySupplier() {
+        this.signedBySupplierAt = Instant.now();
+        this.updatedAt = signedBySupplierAt;
+        if (signedByClientAt != null) {
+            this.status = "SIGNED";
+        }
     }
 
     public boolean isSigned() {

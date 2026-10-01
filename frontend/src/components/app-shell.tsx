@@ -46,6 +46,11 @@ export function AppShell({ children, actions }: { children: React.ReactNode; act
                 {me.data?.role === "SUPPLIER" ? "Orders" : "Missions"}
               </Link>
             )}
+            {me.data?.role === "SUPPLIER" && (
+              <Link className="rounded-md px-2 py-1 text-muted-foreground hover:bg-muted hover:text-foreground" href="/app/workers">
+                My workers
+              </Link>
+            )}
             {me.data?.role === "ADMIN" && (
               <Link className="rounded-md px-2 py-1 text-muted-foreground hover:bg-muted hover:text-foreground" href="/app/admin">
                 AI monitoring

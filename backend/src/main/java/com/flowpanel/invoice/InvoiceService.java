@@ -100,6 +100,14 @@ public class InvoiceService {
     @Transactional(readOnly = true)
     public Invoice pdfOf(Long invoiceId) {
         Invoice invoice = invoices.findById(invoiceId).orElseThrow(() -> new NotFoundException("Invoice", invoiceId));
+        var user = context.current();
+        if (user.isSupplier()) {
+            // A staffing agency may download its own invoices only.
+            if (!invoice.getSupplierId().equals(user.supplierId())) {
+                throw new NotFoundException("Invoice", invoiceId);
+            }
+            return invoice;
+        }
         missions.getForTenant(invoice.getMissionId());
         return invoice;
     }
@@ -167,26 +175,54 @@ public class InvoiceService {
             throw new ConflictException("No invoice mismatch to credit");
         }
         for (Invoice invoice : mismatched) {
-            BigDecimal amount = invoice.getMatchResult().lines().stream().map(ThreeWayMatcher.LineResult::delta)
-                    .filter(d -> d != null && d.signum() > 0).reduce(BigDecimal.ZERO, BigDecimal::add);
-            List<Map<String, Object>> creditLines = invoice.getMatchResult().lines().stream()
-                    .filter(l -> l.delta() != null && l.delta().signum() > 0)
-                    .map(l -> Map.<String, Object>of("worker", l.workerName(), "amount", l.delta(), "reason", l.message()))
-                    .toList();
-            String ref = "AV-" + invoice.getRef().substring(4);
-            invoice.creditNote(ref, amount, Map.of("lines", creditLines));
             audit.human(m.getId(), "invoice.credit-note.requested", "Sent the credit note request for " + invoice.getRef(),
-                    Map.of("invoice", invoice.getRef(), "amount", amount));
-            audit.record(ActorKind.SYSTEM, m.getTenantId(), m.getId(), "invoice.credit-note.received",
-                    tenants.supplierName(invoice.getSupplierId()) + " issued credit note " + ref + " (" + amount + " € HT)",
-                    Map.of("creditNote", ref, "amount", amount));
-            rematch(m, invoice);
-            artifacts.upsert(m.getId(), Phase.INVOICE, ArtifactService.CREDIT_NOTE, ref, "RECEIVED",
-                    Map.of("invoice", invoice.getRef(), "amount", amount, "lines", creditLines));
-            syncArtifact(m, invoice);
+                    Map.of("invoice", invoice.getRef()));
+            issueCreditNote(m, invoice, ActorKind.SYSTEM);
         }
         m.touch();
         return toView(m);
+    }
+
+    /** The supplier issues the credit note itself from the portal (its own invoice, mission in INVOICE, mismatch). */
+    public InvoiceView creditNoteBySupplier(Mission m, Invoice invoice) {
+        if (m.getPhase() != Phase.INVOICE) {
+            throw new ConflictException("Credit notes can only be issued during the Invoice phase");
+        }
+        if (!"MISMATCH".equals(invoice.getStatus())) {
+            throw new ConflictException("Invoice " + invoice.getRef() + " has no mismatch to credit");
+        }
+        issueCreditNote(m, invoice, ActorKind.HUMAN);
+        m.touch();
+        return toInvoiceView(invoice);
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.Optional<Invoice> find(Long invoiceId) {
+        return invoices.findById(invoiceId);
+    }
+
+    @Transactional(readOnly = true)
+    public InvoiceView view(Invoice invoice) {
+        return toInvoiceView(invoice);
+    }
+
+    /** Credit note for the overbilled amount of each mismatched line; the invoice is then matched again. */
+    private void issueCreditNote(Mission m, Invoice invoice, ActorKind actor) {
+        BigDecimal amount = invoice.getMatchResult().lines().stream().map(ThreeWayMatcher.LineResult::delta)
+                .filter(d -> d != null && d.signum() > 0).reduce(BigDecimal.ZERO, BigDecimal::add);
+        List<Map<String, Object>> creditLines = invoice.getMatchResult().lines().stream()
+                .filter(l -> l.delta() != null && l.delta().signum() > 0)
+                .map(l -> Map.<String, Object>of("worker", l.workerName(), "amount", l.delta(), "reason", l.message()))
+                .toList();
+        String ref = "AV-" + invoice.getRef().substring(4);
+        invoice.creditNote(ref, amount, Map.of("lines", creditLines));
+        audit.record(actor, m.getTenantId(), m.getId(), "invoice.credit-note.received",
+                tenants.supplierName(invoice.getSupplierId()) + " issued credit note " + ref + " (" + amount + " € HT)",
+                Map.of("creditNote", ref, "amount", amount));
+        rematch(m, invoice);
+        artifacts.upsert(m.getId(), Phase.INVOICE, ArtifactService.CREDIT_NOTE, ref, "RECEIVED",
+                Map.of("invoice", invoice.getRef(), "amount", amount, "lines", creditLines));
+        syncArtifact(m, invoice);
     }
 
     public InvoicesView approve(Long missionId) {
@@ -287,15 +323,19 @@ public class InvoiceService {
         artifacts.upsert(m.getId(), Phase.INVOICE, ArtifactService.INVOICE, i.getRef(), i.getStatus(), payload);
     }
 
+    private InvoiceView toInvoiceView(Invoice i) {
+        return new InvoiceView(i.getId(), i.getRef(), tenants.supplierName(i.getSupplierId()), i.getStatus(), i.getExtraction(),
+                i.getExtractionAiCallId() != null, i.getMatchResult(), i.getMessageDraft(), i.getCreditNoteRef(),
+                i.getCreditNoteAmount(), i.getCreditNote(), i.getExtractedText());
+    }
+
     private String workerName(Long workerId) {
         return workers.findById(workerId).map(Worker::fullName).orElse("");
     }
 
     private InvoicesView toView(Mission m) {
         List<Invoice> all = invoices.findByMissionIdOrderByIdAsc(m.getId());
-        List<InvoiceView> views = all.stream().map(i -> new InvoiceView(i.getId(), i.getRef(), tenants.supplierName(i.getSupplierId()),
-                i.getStatus(), i.getExtraction(), i.getExtractionAiCallId() != null, i.getMatchResult(), i.getMessageDraft(),
-                i.getCreditNoteRef(), i.getCreditNoteAmount(), i.getCreditNote(), i.getExtractedText())).toList();
+        List<InvoiceView> views = all.stream().map(this::toInvoiceView).toList();
         BigDecimal expected = all.stream().filter(i -> i.getMatchResult() != null).map(i -> i.getMatchResult().expectedTotal())
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal invoiced = all.stream().filter(i -> i.getExtraction() != null).map(i -> i.getExtraction().totalExclTax())

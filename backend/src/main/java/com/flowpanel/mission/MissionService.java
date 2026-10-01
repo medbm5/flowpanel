@@ -120,6 +120,12 @@ public class MissionService {
         return missions.findByIdAndTenantId(id, tenantId).orElseThrow(() -> new NotFoundException("Mission", id));
     }
 
+    /** Mission by id without tenant scope: only for callers that already checked access (supplier portal). */
+    @Transactional(readOnly = true)
+    public Mission getAny(Long id) {
+        return missions.findById(id).orElseThrow(() -> new NotFoundException("Mission", id));
+    }
+
     /**
      * Guard for every phase-specific write: loads the caller's mission with a row lock and rejects the call (409)
      * when the mission is not in the expected phase.

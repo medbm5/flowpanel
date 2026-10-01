@@ -21,6 +21,7 @@ test("board reflects backend state and a new mission appears without a reload", 
 test("supplier persona sees the supplier board", async ({ page }) => {
   await page.goto("/login");
   await page.getByTestId("persona-nadia").click();
-  await expect(page.getByRole("heading", { name: /Orders for InterSud/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "InterSud Intérim", level: 1 })).toBeVisible();
+  await expect(page.getByTestId("supplier-kpis")).toBeVisible();
   await expect(page.getByTestId("supplier-orders")).toBeVisible();
 });

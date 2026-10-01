@@ -1,40 +1,128 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, FileText, Inbox, Users } from "lucide-react";
-import { useState } from "react";
+import { ChevronRight, ClipboardList, FilePenLine, FileText, Inbox, ReceiptText, UserPlus, Users } from "lucide-react";
+import Link from "next/link";
 import { StatusPill } from "@/components/mission/status-badges";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api, call, errorMessage } from "@/lib/api/client";
-import type { OrderDetail, OrderSummary, SupplierInvoice } from "@/lib/api/types";
+import type { OrderSummary, SupplierInvoice } from "@/lib/api/types";
 import { date, money, PHASE_LABEL, shortDate } from "@/lib/format";
-import { cn } from "@/lib/utils";
+import { useSupplierDashboard } from "@/lib/supplier-hooks";
 
-/** Supplier view: orders published to the supplier, its own proposals and placements, its invoices. */
+const TODO_ICON = { PROPOSE: UserPlus, SIGN: FilePenLine, TIMESHEET: ClipboardList, CREDIT_NOTE: ReceiptText } as const;
+
+/** Staffing agency home: what to do next, orders from clients, invoices. */
 export function SupplierBoard({ supplierName }: { supplierName: string }) {
+  const dashboard = useSupplierDashboard();
   const orders = useQuery({ queryKey: ["supplier", "orders"], queryFn: () => call<OrderSummary[]>(api.GET("/supplier/orders")) });
   const invoices = useQuery({
     queryKey: ["supplier", "invoices"],
     queryFn: () => call<SupplierInvoice[]>(api.GET("/supplier/invoices")),
   });
+  const d = dashboard.data;
 
   return (
     <div className="grid gap-8">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">{supplierName}</h1>
+          <p className="text-sm text-muted-foreground">
+            Orders your clients published to your agency. Propose your workers, sign contracts, submit hours, invoice.
+          </p>
+        </div>
+        <Button asChild variant="outline">
+          <Link href="/app/workers">
+            <Users aria-hidden /> My workers
+          </Link>
+        </Button>
+      </div>
+
+      {dashboard.isLoading && <Skeleton className="h-24 rounded-xl" />}
+      {d && (
+        <dl className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6" data-testid="supplier-kpis">
+          {[
+            { label: "Open orders", value: d.openOrders },
+            { label: "Orders to staff", value: d.ordersToStaff, warn: d.ordersToStaff > 0 },
+            { label: "Active placements", value: d.activePlacements },
+            { label: "Contracts to sign", value: d.contractsToSign, warn: d.contractsToSign > 0 },
+            { label: "Timesheets flagged", value: d.timesheetsToFix, warn: d.timesheetsToFix > 0 },
+            { label: "Invoices to credit", value: d.invoicesToCredit, warn: d.invoicesToCredit > 0 },
+          ].map((k) => (
+            <div key={k.label} className="rounded-xl border bg-card p-3">
+              <dt className="text-xs text-muted-foreground">{k.label}</dt>
+              <dd className={`mt-1 text-2xl font-semibold tabular-nums ${k.warn ? "text-warn" : ""}`}>{k.value}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+
+      {d && d.todo.length > 0 && (
+        <section aria-labelledby="todo-title" className="rounded-xl border bg-card">
+          <h2 id="todo-title" className="px-4 pt-4 text-sm font-semibold">
+            To do
+          </h2>
+          <ul className="mt-2 divide-y" data-testid="supplier-todo">
+            {d.todo.map((t, i) => {
+              const Icon = TODO_ICON[t.kind as keyof typeof TODO_ICON] ?? ClipboardList;
+              return (
+                <li key={i}>
+                  <Link href={`/app/orders/${t.missionId}`} className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-accent/30">
+                    <Icon className="size-4 shrink-0 text-cobalt" aria-hidden />
+                    <span className="min-w-0 flex-1">
+                      <span className="block">{t.label}</span>
+                      <span className="block text-xs text-muted-foreground">
+                        {t.client} · <span className="font-mono">{t.missionRef}</span>
+                      </span>
+                    </span>
+                    <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+
       <section aria-labelledby="orders-title">
-        <h1 id="orders-title" className="text-2xl font-semibold tracking-tight">
-          Orders for {supplierName}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Orders published to your agency by your clients. You only see your own proposals and placements.
-        </p>
-        <div className="mt-4">
+        <h2 id="orders-title" className="text-lg font-semibold tracking-tight">
+          Orders
+        </h2>
+        <div className="mt-3">
           {orders.isLoading && <Skeleton className="h-24 rounded-xl" />}
           {orders.isError && <ErrorBox message={errorMessage(orders.error)} />}
           {orders.data?.length === 0 && <Empty text="No order has been published to you yet." />}
           {orders.data && orders.data.length > 0 && (
             <ul className="grid gap-3" data-testid="supplier-orders">
               {orders.data.map((o) => (
-                <OrderRow key={o.missionId} order={o} />
+                <li key={o.missionId}>
+                  <Link
+                    href={`/app/orders/${o.missionId}`}
+                    className="grid gap-2 rounded-xl border bg-card p-4 transition-colors hover:border-cobalt/40 hover:bg-accent/30 sm:grid-cols-[minmax(0,2fr)_minmax(0,1.4fr)_auto] sm:items-center"
+                    data-testid="supplier-order"
+                  >
+                    <span className="min-w-0">
+                      <span className="block font-mono text-xs text-muted-foreground">
+                        {o.ref} · {o.client}
+                      </span>
+                      <span className="block truncate font-medium">{o.title}</span>
+                      <span className="block text-sm text-muted-foreground">
+                        {o.quantity ?? "?"} × {o.position ?? "position"} · {shortDate(o.startDate)} → {date(o.endDate)}
+                      </span>
+                    </span>
+                    <span className="flex flex-wrap items-center gap-2 text-sm">
+                      <StatusPill tone={o.phase === "SOURCING" ? "warn" : "cobalt"}>{PHASE_LABEL[o.phase]}</StatusPill>
+                      <span className="inline-flex items-center gap-1 text-muted-foreground">
+                        <FileText className="size-3.5" aria-hidden /> {o.myProposals} proposals
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-muted-foreground">
+                        <Users className="size-3.5" aria-hidden /> {o.myPlacements} placed
+                      </span>
+                    </span>
+                    <ChevronRight className="hidden size-4 text-muted-foreground sm:block" aria-hidden />
+                  </Link>
+                </li>
               ))}
             </ul>
           )}
@@ -86,83 +174,6 @@ export function SupplierBoard({ supplierName }: { supplierName: string }) {
         </div>
       </section>
     </div>
-  );
-}
-
-function OrderRow({ order }: { order: OrderSummary }) {
-  const [open, setOpen] = useState(false);
-  const detail = useQuery({
-    queryKey: ["supplier", "order", order.missionId],
-    queryFn: () => call<OrderDetail>(api.GET("/supplier/orders/{missionId}", { params: { path: { missionId: order.missionId } } })),
-    enabled: open,
-  });
-  return (
-    <li className="rounded-xl border bg-card">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="grid w-full gap-2 p-4 text-left sm:grid-cols-[minmax(0,2fr)_minmax(0,1.4fr)_auto] sm:items-center"
-      >
-        <span className="min-w-0">
-          <span className="block font-mono text-xs text-muted-foreground">
-            {order.ref} · {order.client}
-          </span>
-          <span className="block truncate font-medium">{order.title}</span>
-          <span className="block text-sm text-muted-foreground">
-            {order.quantity ?? "?"} × {order.position ?? "position"} · {shortDate(order.startDate)} → {date(order.endDate)}
-          </span>
-        </span>
-        <span className="flex flex-wrap items-center gap-2 text-sm">
-          <StatusPill tone="cobalt">{PHASE_LABEL[order.phase]}</StatusPill>
-          <span className="inline-flex items-center gap-1 text-muted-foreground">
-            <FileText className="size-3.5" aria-hidden /> {order.myProposals} proposals
-          </span>
-          <span className="inline-flex items-center gap-1 text-muted-foreground">
-            <Users className="size-3.5" aria-hidden /> {order.myPlacements} placed
-          </span>
-        </span>
-        <ChevronDown className={cn("size-4 text-muted-foreground transition-transform", open && "rotate-180")} aria-hidden />
-      </button>
-      {open && (
-        <div className="border-t p-4">
-          {detail.isLoading && <Skeleton className="h-16" />}
-          {detail.data && (
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <h3 className="text-sm font-medium">Your proposals</h3>
-                <ul className="mt-2 grid gap-1.5 text-sm">
-                  {detail.data.myProposals.map((p) => (
-                    <li key={p.candidateId} className="flex items-center justify-between gap-2">
-                      <span>{p.workerName}</span>
-                      {p.eligible ? (
-                        <StatusPill tone={p.selected ? "ok" : "neutral"}>{p.selected ? "Selected" : `Rank ${p.rank}`}</StatusPill>
-                      ) : (
-                        <StatusPill tone="bad">Excluded</StatusPill>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h3 className="text-sm font-medium">Your placements</h3>
-                {detail.data.myPlacements.length === 0 ? (
-                  <p className="mt-2 text-sm text-muted-foreground">None yet.</p>
-                ) : (
-                  <ul className="mt-2 grid gap-1.5 text-sm">
-                    {detail.data.myPlacements.map((p) => (
-                      <li key={p.workerId}>
-                        {p.workerName} · {shortDate(p.start)} → {date(p.end)}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </li>
   );
 }
 

@@ -2,6 +2,7 @@ package com.flowpanel.sourcing;
 
 import java.text.Normalizer;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -52,6 +53,21 @@ public final class Geo {
             }
         }
         return Optional.ofNullable(best);
+    }
+
+    /** Known city names, for the worker form. */
+    public static List<String> cities() {
+        return CITIES.keySet().stream().map(Geo::title).sorted().toList();
+    }
+
+    private static String title(String key) {
+        StringBuilder sb = new StringBuilder();
+        boolean upper = true;
+        for (char ch : key.toCharArray()) {
+            sb.append(upper ? Character.toUpperCase(ch) : ch);
+            upper = ch == '-' || ch == ' ';
+        }
+        return sb.toString().replace("D'ascq", "d'Ascq");
     }
 
     public static double km(Point a, Point b) {

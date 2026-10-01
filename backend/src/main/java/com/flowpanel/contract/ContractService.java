@@ -24,6 +24,7 @@ import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -155,6 +156,36 @@ public class ContractService {
                 Map.of("contracts", all.stream().map(Contract::getRef).toList()));
         m.touch();
         return toView(m);
+    }
+
+    /** Supplier e-signature from the portal (contract of the caller's agency, mission in CONTRACTS). */
+    public ContractView signBySupplier(Mission m, Contract c) {
+        if (m.getPhase() != Phase.CONTRACTS) {
+            throw new ConflictException("Contracts can only be signed during the Contracts phase");
+        }
+        if (c.getSignedBySupplierAt() != null) {
+            throw new ConflictException("Contract " + c.getRef() + " is already signed by your agency");
+        }
+        Order order = intake.order(m.getId()).orElseThrow();
+        if (ContractRulesEngine.hasBlockingIssue(checks(c, order))) {
+            throw new ConflictException("Contract " + c.getRef() + " has a blocking compliance issue; the client must fix it first");
+        }
+        c.signBySupplier();
+        audit.record(com.flowpanel.audit.ActorKind.HUMAN, m.getTenantId(), m.getId(), "contract.signed.supplier",
+                tenants.supplierName(c.getSupplierId()) + " signed " + c.getRef(), Map.of("contract", c.getRef()));
+        m.touch();
+        syncArtifact(m, c);
+        return toContractView(c, order);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Contract> find(Long contractId) {
+        return contracts.findById(contractId);
+    }
+
+    @Transactional(readOnly = true)
+    public ContractView view(Contract c) {
+        return toContractView(c, intake.order(c.getMissionId()).orElse(null));
     }
 
     @Transactional(readOnly = true)

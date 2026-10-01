@@ -33,7 +33,7 @@ public class OpenApiConfig {
             for (Map.Entry<String, Schema> entry : openApi.getComponents().getSchemas().entrySet()) {
                 Schema<?> schema = entry.getValue();
                 if (schema.getProperties() != null && !schema.getProperties().isEmpty()
-                        && !entry.getKey().endsWith("Request") && !entry.getKey().equals("ProblemDetail")) {
+                        && !entry.getKey().matches(".*(Request|Form|Update)$") && !entry.getKey().equals("ProblemDetail")) {
                     schema.setRequired(new ArrayList<>(schema.getProperties().keySet()));
                 }
             }

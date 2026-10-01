@@ -12,6 +12,7 @@ import java.util.List;
 public class Worker {
 
     @Id
+    @jakarta.persistence.GeneratedValue(strategy = jakarta.persistence.GenerationType.IDENTITY)
     private Long id;
     private Long supplierId;
     private String firstName;
@@ -29,6 +30,33 @@ public class Worker {
     private String profile;
 
     protected Worker() {
+    }
+
+    public Worker(Long supplierId, WorkerData data) {
+        this.supplierId = supplierId;
+        update(data);
+    }
+
+    /** Editable profile of a worker, as maintained by the staffing agency. */
+    public record WorkerData(String firstName, String lastName, String email, String phone, String city, BigDecimal latitude,
+                             BigDecimal longitude, List<String> skills, List<String> certifications, int experienceYears,
+                             LocalDate availableFrom, LocalDate availableTo, String profile) {
+    }
+
+    public void update(WorkerData d) {
+        this.firstName = d.firstName();
+        this.lastName = d.lastName();
+        this.email = d.email();
+        this.phone = d.phone();
+        this.city = d.city();
+        this.latitude = d.latitude();
+        this.longitude = d.longitude();
+        this.skills = d.skills().toArray(String[]::new);
+        this.certifications = d.certifications().toArray(String[]::new);
+        this.experienceYears = d.experienceYears();
+        this.availableFrom = d.availableFrom();
+        this.availableTo = d.availableTo();
+        this.profile = d.profile();
     }
 
     public String fullName() {

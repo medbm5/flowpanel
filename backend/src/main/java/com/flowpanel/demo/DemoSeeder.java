@@ -109,8 +109,23 @@ public class DemoSeeder {
         jdbc.execute("TRUNCATE mission CASCADE");
         jdbc.update("DELETE FROM audit_event WHERE mission_id IS NOT NULL");
         jdbc.execute("ALTER SEQUENCE mission_number_seq RESTART WITH 150");
+        restoreWorkerPool();
         seed();
         return (int) missions.count();
+    }
+
+    /** Agencies can add and edit workers; a reset restores the original synthetic pool from the V3 migration. */
+    private void restoreWorkerPool() {
+        jdbc.execute("TRUNCATE worker CASCADE");
+        try (var in = getClass().getResourceAsStream("/db/migration/V3__missions.sql")) {
+            String sql = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+            int start = sql.indexOf("INSERT INTO worker");
+            int end = sql.indexOf(";", sql.indexOf("'Préparateur de commandes, disponible à partir du 2 novembre.'"));
+            jdbc.execute(sql.substring(start, end));
+            jdbc.execute("SELECT setval('worker_id_seq', 100)");
+        } catch (java.io.IOException | NullPointerException e) {
+            throw new IllegalStateException("Cannot restore the demo worker pool", e);
+        }
     }
 
     @Transactional

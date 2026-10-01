@@ -219,6 +219,62 @@ public class SourcingService implements MissionPositions {
         return toView(m, candidates.findByMissionIdOrderByEligibleDescScoreDesc(m.getId()));
     }
 
+    /**
+     * A supplier user proposes one of its own workers on an order published to its agency (mission in SOURCING).
+     * The same hard rules and score apply as for every other proposal. Scope checks are done by the caller.
+     */
+    public Candidate proposeBySupplier(Mission m, Worker w) {
+        if (candidates.findByMissionIdOrderByEligibleDescScoreDesc(m.getId()).stream()
+                .anyMatch(c -> c.getWorkerId().equals(w.getId()))) {
+            throw new ConflictException(w.fullName() + " is already proposed on this order");
+        }
+        Order order = intake.order(m.getId()).orElseThrow(() -> new ConflictException("The order is not confirmed"));
+        OrderCriteria criteria = new OrderCriteria(order.site(), order.startDate(), order.endDate(),
+                order.requiredCertifications(), order.position());
+        double similarity = EmbeddingService.cosine(embeddings.embed("sourcing.embedding", orderText(order)),
+                embeddings.embed("sourcing.embedding", w.matchingText()));
+        List<Booking> bookings = placements.forWorkers(List.of(w.getId())).stream()
+                .filter(p -> !p.missionId().equals(m.getId()))
+                .map(p -> new Booking(p.missionRef(), p.start(), p.end()))
+                .toList();
+        Candidate c = candidates.save(new Candidate(m.getId(), w.getId(), w.getSupplierId(),
+                CandidateRanking.evaluate(criteria, facts(w), similarity, bookings)));
+        rerank(m.getId());
+        if (c.isEligible() && c.getRank() != null && c.getRank() <= SUMMARIES) {
+            summarize(m, c);
+        }
+        audit.record(com.flowpanel.audit.ActorKind.HUMAN, m.getTenantId(), m.getId(), "sourcing.proposed",
+                tenants.supplierName(w.getSupplierId()) + " proposed " + w.fullName()
+                        + (c.isEligible() ? " (rank " + c.getRank() + ")" : " — excluded: " + String.join("; ", c.getExclusionReasons())),
+                Map.of("candidateId", c.getId(), "workerId", w.getId(), "eligible", c.isEligible()));
+        m.touch();
+        return c;
+    }
+
+    /** A supplier withdraws one of its proposals, as long as the buyer has not selected it. */
+    public void withdrawBySupplier(Mission m, Candidate c) {
+        if (placements.forMission(m.getId()).stream().anyMatch(p -> p.candidateId().equals(c.getId()))) {
+            throw new ConflictException("This candidate is already selected by the client; ask the client to unselect first");
+        }
+        Worker w = workers.findById(c.getWorkerId()).orElseThrow();
+        candidates.delete(c);
+        candidates.flush();
+        rerank(m.getId());
+        audit.record(com.flowpanel.audit.ActorKind.HUMAN, m.getTenantId(), m.getId(), "sourcing.withdrawn",
+                tenants.supplierName(c.getSupplierId()) + " withdrew " + w.fullName(), Map.of("workerId", w.getId()));
+        m.touch();
+    }
+
+    private void rerank(Long missionId) {
+        List<Candidate> all = candidates.findByMissionIdOrderByEligibleDescScoreDesc(missionId);
+        List<Candidate> eligible = all.stream().filter(Candidate::isEligible)
+                .sorted(Comparator.comparing(Candidate::getScore).reversed().thenComparing(Candidate::getWorkerId)).toList();
+        for (int i = 0; i < eligible.size(); i++) {
+            eligible.get(i).setRank(i + 1);
+        }
+        all.stream().filter(c -> !c.isEligible()).forEach(c -> c.setRank(null));
+    }
+
     @EventListener
     public void onPhaseFinalized(MissionEvents.PhaseFinalized event) {
         if (event.phase() == Phase.SOURCING) {
