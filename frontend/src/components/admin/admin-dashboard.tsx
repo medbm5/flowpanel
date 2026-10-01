@@ -2,6 +2,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, RotateCcw } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { useMutation } from "@tanstack/react-query";
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -47,9 +48,14 @@ export function AdminDashboard() {
           <h1 className="text-2xl font-semibold tracking-tight">AI monitoring</h1>
           <p className="text-sm text-muted-foreground">Latency, tokens, estimated cost, errors and quality of every AI call, across tenants.</p>
         </div>
-        <Button variant="outline" onClick={() => reset.mutate()} disabled={reset.isPending}>
-          {reset.isPending ? <Loader2 className="animate-spin" aria-hidden /> : <RotateCcw aria-hidden />} Reset demo data
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline">
+            <Link href="/app/admin/usage">LLM usage per user</Link>
+          </Button>
+          <Button variant="outline" onClick={() => reset.mutate()} disabled={reset.isPending}>
+            {reset.isPending ? <Loader2 className="animate-spin" aria-hidden /> : <RotateCcw aria-hidden />} Reset demo data
+          </Button>
+        </div>
       </div>
 
       {overview.isLoading && <Skeleton className="h-64 rounded-xl" />}

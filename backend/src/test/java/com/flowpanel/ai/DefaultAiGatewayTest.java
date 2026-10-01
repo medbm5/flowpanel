@@ -79,7 +79,7 @@ class DefaultAiGatewayTest {
         recorder = mock(AiCallRecorder.class);
         when(recorder.record(any())).thenAnswer(inv -> {
             AiCallRecorder.Attempt a = inv.getArgument(0);
-            return new AiCall(1L, null, null, a.feature(), a.kind(), "mock", a.model(), a.inputTokens(), a.outputTokens(),
+            return new AiCall(1L, null, 1L, null, a.feature(), a.kind(), "mock", a.model(), a.inputTokens(), a.outputTokens(),
                     a.latencyMs(), BigDecimal.ONE, a.status(), a.attempt(), a.error(), a.promptHash());
         });
         guard = mock(SpendGuard.class);

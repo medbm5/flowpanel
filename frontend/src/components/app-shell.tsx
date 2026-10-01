@@ -51,6 +51,11 @@ export function AppShell({ children, actions }: { children: React.ReactNode; act
                 AI monitoring
               </Link>
             )}
+            {me.data?.role === "ADMIN" && (
+              <Link className="rounded-md px-2 py-1 text-muted-foreground hover:bg-muted hover:text-foreground" href="/app/admin/usage">
+                LLM usage
+              </Link>
+            )}
           </nav>
           <div className="ml-auto flex items-center gap-1">
             {me.data && me.data.role !== "ADMIN" && <CopilotSheet />}

@@ -21,6 +21,7 @@ public class AiCall {
     private Long id;
     private Long tenantId;
     private Long supplierId;
+    private Long userId;
     private Long missionId;
     private String feature;
     @jakarta.persistence.Enumerated(jakarta.persistence.EnumType.STRING)
@@ -41,11 +42,12 @@ public class AiCall {
     protected AiCall() {
     }
 
-    public AiCall(Long tenantId, Long supplierId, Long missionId, String feature, Kind kind, String profile, String model,
+    public AiCall(Long tenantId, Long supplierId, Long userId, Long missionId, String feature, Kind kind, String profile, String model,
                   int inputTokens, int outputTokens, long latencyMs, BigDecimal estimatedCostUsd, Status status,
                   int attempt, String error, String promptHash) {
         this.tenantId = tenantId;
         this.supplierId = supplierId;
+        this.userId = userId;
         this.missionId = missionId;
         this.feature = feature;
         this.kind = kind;
@@ -68,6 +70,10 @@ public class AiCall {
 
     public Long getTenantId() {
         return tenantId;
+    }
+
+    public Long getUserId() {
+        return userId;
     }
 
     public Long getMissionId() {

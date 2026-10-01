@@ -88,6 +88,11 @@ class IntakeIT extends AbstractIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON).content("{\"value\":\"-1\"}"), status().isBadRequest());
         assertThat(problem.get("field").asText()).isEqualTo("hourlyRate");
         call(post("/missions/" + id + "/intake/fields/nope/confirm").cookie(claire), status().isNotFound());
+
+        JsonNode saved = call(post("/missions/" + id + "/intake/fields/hourlyRate/confirm").cookie(claire)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"value\":\"12,50 €\"}"), status().isOk());
+        assertThat(field(saved, "hourlyRate").get("value").asText()).isEqualTo("12.50");
+        assertThat(field(saved, "hourlyRate").get("needsReview").asBoolean()).isFalse();
     }
 
     @Test

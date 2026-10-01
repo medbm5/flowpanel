@@ -66,4 +66,17 @@ class OrderValidatorTest {
         v.put("startDate", "5 octobre");
         assertThat(OrderValidator.validate(v).get("startDate")).isNotEmpty();
     }
+
+    @Test
+    void typedValuesAreNormalized() {
+        assertThat(OrderValidator.normalize("hourlyRate", "12,50 €")).isEqualTo("12.50");
+        assertThat(OrderValidator.normalize("hourlyRate", "€12.50")).isEqualTo("12.50");
+        assertThat(OrderValidator.normalize("hourlyRate", "12.5 EUR/h")).isEqualTo("12.5");
+        assertThat(OrderValidator.normalize("hourlyRate", "1.250,00")).isEqualTo("1250.00");
+        assertThat(OrderValidator.normalize("weeklyHours", "35 h")).isEqualTo("35");
+        assertThat(OrderValidator.normalize("quantity", " 3 ")).isEqualTo("3");
+        assertThat(OrderValidator.normalize("startDate", "05/10/2026")).isEqualTo("2026-10-05");
+        assertThat(OrderValidator.normalize("overtimeAllowed", "Oui")).isEqualTo("true");
+        assertThat(OrderValidator.normalize("hourlyRate", "douze")).isEqualTo("douze");
+    }
 }

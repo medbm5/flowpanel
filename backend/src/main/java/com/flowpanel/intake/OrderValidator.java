@@ -100,6 +100,50 @@ public final class OrderValidator {
         return errors;
     }
 
+    private static final java.util.regex.Pattern FR_DATE = java.util.regex.Pattern.compile("^(\\d{1,2})[/.-](\\d{1,2})[/.-](\\d{4})$");
+
+    /**
+     * Canonical form of a value typed by a person: numbers without currency or unit and with a dot
+     * ("12,50 €" → "12.50", "35 h" → "35"), dates as ISO ("05/10/2026" → "2026-10-05"), booleans lower-case.
+     * Values that cannot be normalized are returned trimmed, so validation reports them.
+     */
+    public static String normalize(String field, String raw) {
+        if (raw == null) {
+            return null;
+        }
+        String v = raw.strip();
+        switch (field) {
+            case "quantity", "weeklyHours", "hourlyRate" -> {
+                String n = v.replace(' ', ' ')
+                        .replaceAll("(?iu)€|eur(os?)?|\\$|/\\s*h(eure)?|\\bheures?\\b|\\bh\\b|par semaine|hebdo|brut", "")
+                        .replace(" ", "");
+                if (n.matches("\\d{1,3}(\\.\\d{3})+,\\d+")) {
+                    n = n.replace(".", "");
+                }
+                n = n.replace(',', '.');
+                return n.matches("-?\\d+(\\.\\d+)?") ? n : v;
+            }
+            case "startDate", "endDate" -> {
+                java.util.regex.Matcher m = FR_DATE.matcher(v);
+                return m.matches() ? String.format("%s-%02d-%02d", m.group(3), Integer.parseInt(m.group(2)), Integer.parseInt(m.group(1))) : v;
+            }
+            case "overtimeAllowed" -> {
+                String b = v.toLowerCase(java.util.Locale.ROOT);
+                return switch (b) {
+                    case "true", "yes", "oui", "1" -> "true";
+                    case "false", "no", "non", "0" -> "false";
+                    default -> v;
+                };
+            }
+            case "legalReason" -> {
+                return v.toUpperCase(java.util.Locale.ROOT).replace(' ', '_');
+            }
+            default -> {
+                return v;
+            }
+        }
+    }
+
     private static void required(Map<String, String> values, String field, Map<String, List<String>> errors) {
         if (blank(values.get(field))) {
             errors.get(field).add("is required");

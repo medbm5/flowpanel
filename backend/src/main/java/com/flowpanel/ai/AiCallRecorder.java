@@ -51,7 +51,7 @@ public class AiCallRecorder {
         BigDecimal cost = a.status() == AiCall.Status.BUDGET_EXCEEDED || a.status() == AiCall.Status.RATE_LIMITED
                 ? BigDecimal.ZERO : estimateCost(a.model(), a.inputTokens(), a.outputTokens());
         AiCall call = repository.save(new AiCall(user == null ? null : user.tenantId(),
-                user == null ? null : user.supplierId(), a.missionId(), a.feature(), a.kind(), props.profileName(),
+                user == null ? null : user.supplierId(), user == null ? null : user.userId(), a.missionId(), a.feature(), a.kind(), props.profileName(),
                 a.model(), a.inputTokens(), a.outputTokens(), a.latencyMs(), cost, a.status(), a.attempt(), a.error(),
                 a.promptHash()));
         Map<String, Object> details = new LinkedHashMap<>();

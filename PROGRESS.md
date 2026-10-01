@@ -268,3 +268,14 @@ Run log for the BUILD_PLAN.md slices. One entry per slice.
 - Backend: 105 unit tests and 15 integration-test classes (Testcontainers + pgvector). Frontend: 9 Vitest tests and 13 Playwright tests
   (incl. the Intake → Closed walk). Evals: mock profile PASS (intake 1.00, invoice 1.00/1.00, RAG hit 1.00, citations 1.00, answers 0.91,
   tools 1.00/1.00).
+
+### Follow-up — LLM usage per user + intake edit fix
+- `V12__ai_call_user.sql`: `ai_call.user_id` (backfilled from AI audit events); `AiCallRecorder` stores the acting user.
+  `GET /admin/usage/users?days=1|7|30|90` and `GET /admin/usage/detail?userId=` (admin only): per-user calls, success / failed / refused /
+  retries, input & output tokens, estimated and live cost, share of cost, avg / p95 latency, last call; detail by feature, model, status,
+  tokens per day, recent calls; OpenAI config (profile, models, price table, daily budget used, rate limit, default max_tokens) and a
+  projected monthly cost. UI: `/app/admin/usage` (linked from the admin nav and AI monitoring). Tests: `UsageIT`, `e2e/usage.spec.ts`.
+- Bug fix (reported): editing the hourly rate as "12,50 €" / "€12.50" / "12.5 EUR" was rejected with a 400 shown only as a toast.
+  Typed values are now normalized server-side (`OrderValidator.normalize`: currency/units stripped, comma → dot, dd/mm/yyyy → ISO,
+  oui/non → true/false), and the field editor keeps the input open with the error shown inline (Enter saves, Escape cancels).
+  Tests: `OrderValidatorTest.typedValuesAreNormalized`, `IntakeIT`, `e2e/intake-edit.spec.ts`.

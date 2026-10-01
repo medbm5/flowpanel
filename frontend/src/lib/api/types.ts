@@ -36,3 +36,7 @@ export type ToolCallView = S["ToolCallView"];
 export type MetricsOverview = S["Overview"];
 export type EvalRun = S["EvalRun"];
 export type AuditRow = S["AuditRow"];
+export type UsageOverview = S["UsageOverview"];
+export type UserUsage = S["UserUsage"];
+export type UsageUserDetail = S["UsageUserDetail"];
+export type UsageBreakdown = S["UsageBreakdown"];

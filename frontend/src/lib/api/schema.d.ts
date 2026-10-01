@@ -660,6 +660,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/usage/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["users"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/usage/detail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["detail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/metrics/overview": {
         parameters: {
             query?: never;
@@ -1227,6 +1259,148 @@ export interface components {
             /** @enum {string} */
             role: "BUYER" | "SUPPLIER" | "ADMIN";
             organization: string;
+        };
+        ModelPrice: {
+            model: string;
+            inputPerMillion: number;
+            outputPerMillion: number;
+        };
+        UsageConfig: {
+            profile: string;
+            chatModel: string;
+            embeddingModel: string;
+            dailyBudgetUsd: number;
+            liveSpendTodayUsd: number;
+            /** Format: double */
+            budgetUsedToday: number;
+            /** Format: int32 */
+            rateLimitPerMinute: number;
+            /** Format: int32 */
+            defaultMaxTokens: number;
+            pricing: components["schemas"]["ModelPrice"][];
+        };
+        UsageOverview: {
+            /** Format: int32 */
+            days: number;
+            config: components["schemas"]["UsageConfig"];
+            totals: components["schemas"]["UsageTotals"];
+            users: components["schemas"]["UserUsage"][];
+        };
+        UsageTotals: {
+            /** Format: int64 */
+            calls: number;
+            /** Format: int64 */
+            okCalls: number;
+            /** Format: int64 */
+            failedCalls: number;
+            /** Format: int64 */
+            refusedCalls: number;
+            /** Format: int64 */
+            inputTokens: number;
+            /** Format: int64 */
+            outputTokens: number;
+            costUsd: number;
+            liveCostUsd: number;
+            avgDailyCostUsd: number;
+            projectedMonthlyCostUsd: number;
+            /** Format: int64 */
+            activeUsers: number;
+        };
+        UserUsage: {
+            /** Format: int64 */
+            userId: number;
+            displayName: string;
+            persona: string;
+            role: string;
+            organization: string;
+            /** Format: int64 */
+            calls: number;
+            /** Format: int64 */
+            okCalls: number;
+            /** Format: int64 */
+            failedCalls: number;
+            /** Format: int64 */
+            refusedCalls: number;
+            /** Format: int64 */
+            retries: number;
+            /** Format: int64 */
+            inputTokens: number;
+            /** Format: int64 */
+            outputTokens: number;
+            costUsd: number;
+            liveCostUsd: number;
+            /** Format: int64 */
+            avgLatencyMs: number;
+            /** Format: int64 */
+            p95LatencyMs: number;
+            /** Format: date-time */
+            lastCallAt: string;
+            /** Format: double */
+            shareOfCost: number;
+        };
+        UsageBreakdown: {
+            key: string;
+            /** Format: int64 */
+            calls: number;
+            /** Format: int64 */
+            failedCalls: number;
+            /** Format: int64 */
+            inputTokens: number;
+            /** Format: int64 */
+            outputTokens: number;
+            costUsd: number;
+            /** Format: int64 */
+            avgLatencyMs: number;
+            /** Format: int64 */
+            p95LatencyMs: number;
+        };
+        UsageCall: {
+            /** Format: int64 */
+            id: number;
+            /** Format: date-time */
+            createdAt: string;
+            feature: string;
+            kind: string;
+            model: string;
+            profile: string;
+            status: string;
+            /** Format: int32 */
+            attempt: number;
+            /** Format: int32 */
+            inputTokens: number;
+            /** Format: int32 */
+            outputTokens: number;
+            /** Format: int64 */
+            latencyMs: number;
+            costUsd: number;
+            missionRef: string;
+            error: string;
+        };
+        UsageDay: {
+            /** Format: date */
+            day: string;
+            /** Format: int64 */
+            calls: number;
+            /** Format: int64 */
+            inputTokens: number;
+            /** Format: int64 */
+            outputTokens: number;
+            costUsd: number;
+        };
+        UsageUserDetail: {
+            /** Format: int32 */
+            days: number;
+            user: components["schemas"]["UserUsage"];
+            /** Format: double */
+            avgTokensPerCall: number;
+            avgCostPerCallUsd: number;
+            /** Format: double */
+            outputInputRatio: number;
+            byFeature: components["schemas"]["UsageBreakdown"][];
+            byModel: components["schemas"]["UsageBreakdown"][];
+            byStatus: components["schemas"]["UsageBreakdown"][];
+            daily: components["schemas"]["UsageDay"][];
+            recentCalls: components["schemas"]["UsageCall"][];
         };
         Corrections: {
             /** Format: int64 */
@@ -2283,6 +2457,51 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Me"];
+                };
+            };
+        };
+    };
+    users: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UsageOverview"];
+                };
+            };
+        };
+    };
+    detail: {
+        parameters: {
+            query?: {
+                userId?: number;
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UsageUserDetail"];
                 };
             };
         };

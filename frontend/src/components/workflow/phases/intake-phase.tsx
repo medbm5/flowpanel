@@ -5,7 +5,7 @@ import { useState } from "react";
 import { AiBadge } from "@/components/mission/status-badges";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { api, call } from "@/lib/api/client";
+import { api, call, errorMessage } from "@/lib/api/client";
 import type { FieldView, IntakeView } from "@/lib/api/types";
 import { phaseKeys, useIntake, usePhaseAction } from "@/lib/mission-hooks";
 import { cn } from "@/lib/utils";
@@ -69,6 +69,7 @@ export function IntakePhase({ missionId }: { missionId: number }) {
 function FieldRow({ missionId, field, readOnly }: { missionId: number; field: FieldView; readOnly: boolean }) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(field.value);
+  const [error, setError] = useState<string | null>(null);
   const confirm = usePhaseAction(
     missionId,
     phaseKeys.intake(missionId),
@@ -82,6 +83,14 @@ function FieldRow({ missionId, field, readOnly }: { missionId: number; field: Fi
     () => `${field.label} ${editing ? "corrected" : "confirmed"}`,
   );
 
+  function save() {
+    setError(null);
+    confirm.mutate(value, {
+      onSuccess: () => setEditing(false),
+      onError: (e) => setError(errorMessage(e)),
+    });
+  }
+
   return (
     <li
       className={cn("grid gap-2 px-4 py-2.5 sm:grid-cols-[150px_minmax(0,1fr)_auto] sm:items-center", field.needsReview && "bg-warn-soft/60")}
@@ -91,13 +100,26 @@ function FieldRow({ missionId, field, readOnly }: { missionId: number; field: Fi
       <span className="text-xs font-medium text-muted-foreground">{field.label}</span>
       <span className="min-w-0">
         {editing ? (
-          <Input
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            aria-label={`New value for ${field.label}`}
-            className="h-8"
-            autoFocus
-          />
+          <>
+            <Input
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") save();
+                if (e.key === "Escape") setEditing(false);
+              }}
+              aria-label={`New value for ${field.label}`}
+              aria-invalid={!!error}
+              aria-describedby={error ? `error-${field.name}` : undefined}
+              className="h-8"
+              autoFocus
+            />
+            {error && (
+              <span id={`error-${field.name}`} role="alert" className="mt-1 block text-xs text-bad">
+                {error}
+              </span>
+            )}
+          </>
         ) : (
           <span className="block break-words text-sm">{field.value || <span className="text-muted-foreground">—</span>}</span>
         )}
@@ -116,7 +138,7 @@ function FieldRow({ missionId, field, readOnly }: { missionId: number; field: Fi
         <span className="flex gap-1">
           {editing ? (
             <>
-              <Button size="sm" onClick={() => confirm.mutate(value, { onSuccess: () => setEditing(false) })} disabled={confirm.isPending}>
+              <Button size="sm" onClick={save} disabled={confirm.isPending}>
                 <Check aria-hidden /> Save
               </Button>
               <Button size="icon-sm" variant="ghost" aria-label="Cancel" onClick={() => setEditing(false)}>
@@ -136,6 +158,7 @@ function FieldRow({ missionId, field, readOnly }: { missionId: number; field: Fi
                 aria-label={`Edit ${field.label}`}
                 onClick={() => {
                   setValue(field.value);
+                  setError(null);
                   setEditing(true);
                 }}
               >

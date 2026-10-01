@@ -112,7 +112,8 @@ public class IntakeService {
             throw new NotFoundException("Field", field);
         }
         Map<String, String> values = values(draft.getFields());
-        String newValue = request == null || request.value() == null ? values.get(field) : request.value().strip();
+        String newValue = request == null || request.value() == null ? values.get(field)
+                : OrderValidator.normalize(field, request.value());
         values.put(field, newValue);
         Map<String, List<String>> errors = OrderValidator.validate(values);
         if (!errors.get(field).isEmpty()) {
