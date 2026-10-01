@@ -160,3 +160,12 @@ _None yet._
 - Deviations: Next.js 16 renamed Middleware to **Proxy**, so the auth-cookie check lives in `src/proxy.ts`. Backend: an OpenAPI customizer marks
   record properties as required so generated types are strict. `@vitejs/plugin-react` is not used (peer conflict with Babel 8 in its
   optional deps); Vitest 5 transforms TSX natively. The generated `schema.d.ts` is committed so builds don't need a running backend.
+
+### Slice 12 — Missions board
+- Built: `/app` board for buyers — one row per mission (ref, title, site, positions filled, 6-segment `PhaseProgress`, next action,
+  "Needs review" tag), filters All / In progress / Needs review / Closed (server-side `status` param), "New mission" dialog (template
+  cards or raw email textarea) that inserts the created mission into the cached board (no reload) and opens it at Intake. Supplier persona
+  gets a supplier board: orders published to them (expandable: own proposals and placements) and their invoices. Admin is redirected to
+  `/app/admin`. Loading skeletons, empty states with a call to action, ProblemDetail messages in error boxes/toasts.
+- Tests: Vitest + Testing Library (`PhaseProgress`, `MissionBoard`: rows, review tag, empty state, error message, creation adds a row without
+  reload); Playwright `e2e/board.spec.ts` against the running backend (board state, new mission, supplier board).

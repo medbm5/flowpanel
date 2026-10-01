@@ -2,7 +2,12 @@ import createClient from "openapi-fetch";
 import type { paths } from "./schema";
 
 /** Typed client for the backend, always through the same-origin /api rewrite. */
-export const api = createClient<paths>({ baseUrl: "/api", credentials: "include" });
+export const api = createClient<paths>({
+  baseUrl: typeof window === "undefined" ? "/api" : `${window.location.origin}/api`,
+  credentials: "include",
+  // Resolved at call time so tests can stub fetch.
+  fetch: (request) => globalThis.fetch(request),
+});
 
 /** RFC 7807 problem returned by the backend. */
 export type Problem = {
