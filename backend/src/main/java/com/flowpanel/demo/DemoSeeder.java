@@ -3,8 +3,8 @@ package com.flowpanel.demo;
 import com.flowpanel.auth.CurrentUser;
 import com.flowpanel.auth.RequestContext;
 import com.flowpanel.auth.Role;
+import com.flowpanel.contract.ContractService;
 import com.flowpanel.intake.IntakeService;
-import com.flowpanel.mission.ArtifactService;
 import com.flowpanel.mission.Mission;
 import com.flowpanel.mission.MissionRepository;
 import com.flowpanel.mission.MissionService;
@@ -13,7 +13,6 @@ import com.flowpanel.mission.RequestTemplate;
 import com.flowpanel.mission.RequestTemplateRepository;
 import com.flowpanel.sourcing.SourcingService;
 import java.util.List;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,23 +40,24 @@ public class DemoSeeder {
     private final MissionRepository missions;
     private final MissionService missionService;
     private final RequestTemplateRepository templates;
-    private final ArtifactService artifacts;
     private final IntakeService intake;
     private final SourcingService sourcing;
+    private final ContractService contracts;
     private final RequestContext context;
     private final JdbcTemplate jdbc;
     private final boolean seedOnStartup;
     private final TransactionTemplate tx;
 
     public DemoSeeder(MissionRepository missions, MissionService missionService, RequestTemplateRepository templates,
-                      ArtifactService artifacts, IntakeService intake, SourcingService sourcing, RequestContext context, JdbcTemplate jdbc, TransactionTemplate tx,
+                      IntakeService intake, SourcingService sourcing,
+                      ContractService contracts, RequestContext context, JdbcTemplate jdbc, TransactionTemplate tx,
                       @Value("${flowpanel.demo.seed-on-startup:true}") boolean seedOnStartup) {
         this.missions = missions;
         this.missionService = missionService;
         this.templates = templates;
-        this.artifacts = artifacts;
         this.intake = intake;
         this.sourcing = sourcing;
+        this.contracts = contracts;
         this.context = context;
         this.jdbc = jdbc;
         this.seedOnStartup = seedOnStartup;
@@ -140,11 +140,20 @@ public class DemoSeeder {
         }
     }
 
+    /** Generates the contracts, applies the auto-fixes for the seeded blocking issue, then signs. */
+    private void completeContracts(Mission m) {
+        for (var c : contracts.generate(m.getId()).contracts()) {
+            c.checks().stream().filter(r -> !r.passed() && r.autoFixable())
+                    .forEach(r -> contracts.fix(c.id(), r.ruleId()));
+        }
+        contracts.sign(m.getId());
+    }
+
     private void completePhase(Mission m, List<Long> preferredWorkers) {
         switch (m.getPhase()) {
             case INTAKE -> completeIntake(m);
             case SOURCING -> completeSourcing(m, preferredWorkers);
-            case CONTRACTS -> artifacts.upsert(m.getId(), Phase.CONTRACTS, ArtifactService.CONTRACT, "CT-" + m.getNumber() + "-01", "SIGNED", Map.of());
+            case CONTRACTS -> completeContracts(m);
             default -> throw new IllegalStateException("Seeder cannot complete phase " + m.getPhase());
         }
     }

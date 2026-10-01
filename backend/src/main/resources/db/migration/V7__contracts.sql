@@ -1,0 +1,26 @@
+CREATE TABLE contract (
+    id                     BIGSERIAL PRIMARY KEY,
+    mission_id             BIGINT        NOT NULL REFERENCES mission (id) ON DELETE CASCADE,
+    placement_id           BIGINT        NOT NULL REFERENCES placement (id) ON DELETE CASCADE,
+    worker_id              BIGINT        NOT NULL REFERENCES worker (id),
+    supplier_id            BIGINT        NOT NULL REFERENCES supplier (id),
+    ref                    TEXT          NOT NULL UNIQUE,
+    position               TEXT          NOT NULL,
+    start_date             DATE          NOT NULL,
+    end_date               DATE          NOT NULL,
+    hourly_rate            NUMERIC(8, 2) NOT NULL,
+    weekly_hours           NUMERIC(5, 2) NOT NULL,
+    overtime_allowed       BOOLEAN       NOT NULL DEFAULT false,
+    legal_reason           TEXT,
+    replaced_employee      TEXT,
+    attached_certificates  JSONB         NOT NULL DEFAULT '[]'::jsonb,
+    content                TEXT          NOT NULL,
+    content_ai_call_id     BIGINT,
+    status                 TEXT          NOT NULL CHECK (status IN ('DRAFT', 'SIGNED')),
+    signed_by_client_at    TIMESTAMPTZ,
+    signed_by_supplier_at  TIMESTAMPTZ,
+    created_at             TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    updated_at             TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    UNIQUE (placement_id)
+);
+CREATE INDEX contract_mission_idx ON contract (mission_id);

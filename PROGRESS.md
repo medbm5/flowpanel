@@ -97,3 +97,14 @@ _None yet._
   ORD-0147 is published with ranked proposals.
 - Tests: `CandidateRankingTest` (each rule pass/fail, scoring monotonicity), `SourcingIT` (reasons, AI summaries, cap, undo, excluded
   candidate, cross-mission double booking, **concurrent selections → exactly one 200 and one 409**, supplier scoping, phase guard).
+
+### Slice 7 — Contracts phase
+- Built: `contract` table; `POST /missions/{id}/contracts/generate` (one contract per placement, ref `CT-<mission number>-0N`,
+  structured terms copied deterministically from the order and placement, body drafted by the LLM `contract.draft` from masked facts),
+  `GET /missions/{id}/contracts`, `POST /contracts/{id}/fix/{ruleId}`, `POST /missions/{id}/contracts/sign` (simulated e-signature by
+  client and supplier, refused while a blocking issue remains). `ContractRulesEngine` (pure Java): RATE_MATCHES_ORDER,
+  LEGAL_REASON_PRESENT, CERTIFICATE_ATTACHED (fixable only if the worker holds it), DATES_WITHIN_ORDER; auto-fixes derive from the order.
+  The first contract is generated with the end date one week after the order end (seeded blocking issue). Real `ContractsGateValidator`
+  (generated, no blocking issue → "Needs review", all signed); CONTRACT artifacts DRAFT → SIGNED.
+- Tests: `ContractRulesEngineTest` (each rule pass and fail, fixes), `ContractsIT` (full generate → blocked sign → fix → sign → finalize,
+  AI draft restored with the worker name that the provider never saw, double generation, cross-tenant fix → 404).
