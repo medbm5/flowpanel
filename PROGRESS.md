@@ -21,3 +21,12 @@ _None yet._
   profiles `local` / `test` / `prod`, env-var config, `AbstractIntegrationTest` (singleton pgvector Testcontainer + MockMvc), `SmokeIT`.
 - Versions checked on Maven Central: Spring Boot 3.5.16 is the latest 3.x (4.x exists but the plan asks for 3.x); springdoc 2.9.1 is built on Boot 3.5.16.
 - Deviations: integration tests use the `*IT` suffix and run in failsafe during `verify`. The `local` profile imports the repo-root `.env` (gitignored).
+
+### Slice 2 — Multi-tenancy, multi-party access and demo auth
+- Built: `tenant`, `supplier`, `tenant_supplier` (panel), `app_user` (role-scope CHECK constraint), `audit_event`; reference data in `V2`.
+  Demo personas: `claire` (LogiNord buyer), `marc` (MétalPro buyer), `nadia` (InterSud Intérim), `thomas` (Proxi Staffing), `admin`.
+  `POST /auth/demo-login` (HS256 JWT via jjwt 0.13.0 in an httpOnly SameSite=Lax cookie), `POST /auth/logout`, `GET /auth/me`, `GET /auth/personas`.
+  `RequestContext` (tenantId / supplierId / role / userId from the JWT), `AuditService`, scoped `TenantService` (`/tenants/{id}`, `/suppliers`, `/suppliers/{id}`).
+- Tests: `AuthIT`, `IsolationIT` (tenant boundary and supplier boundary, both 404).
+- Deviations: added a second supplier persona (`thomas`, Proxi) so supplier-vs-supplier isolation can be demoed from both sides.
+  Tenants/suppliers/users are Flyway reference data; mission data is seeded by a Java seeder (Slice 3) so it can be reset.
