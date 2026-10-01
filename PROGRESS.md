@@ -30,3 +30,19 @@ _None yet._
 - Tests: `AuthIT`, `IsolationIT` (tenant boundary and supplier boundary, both 404).
 - Deviations: added a second supplier persona (`thomas`, Proxi) so supplier-vs-supplier isolation can be demoed from both sides.
   Tenants/suppliers/users are Flyway reference data; mission data is seeded by a Java seeder (Slice 3) so it can be reset.
+
+### Slice 3 — Mission domain and phase state machine
+- Built: `worker` (15 synthetic workers), `request_template` (3 templates), `mission` (ref `ORD-<year>-NNNN`), `phase_completion`, `artifact` (jsonb payload).
+  `Phase` enum with an explicit allowed-transitions map; `GateValidator` (one per phase) + `GateRegistry` + `GateEvaluation`
+  (checks, next action, needs-review computed server-side). Endpoints: `GET /missions?status=all|open|review|closed`, `POST /missions`
+  (template or raw email), `GET /missions/{id}`, `POST /missions/{id}/phases/{phase}/finalize` (409 + `unmetChecks`, or 409 + `currentPhase`),
+  `GET /missions/{id}/audit`, `GET /request-templates`, `POST /admin/demo/reset`. `MissionService.requireCurrentPhase` is the 409 guard
+  every phase-specific write goes through (row lock + phase check). Phase lifecycle is published as in-transaction events
+  (`PhaseFinalized`, `PhaseEntered`) so feature modules open/close their phase without circular dependencies.
+- `DemoSeeder` drives the seeded missions through the real services and gates (ORD-0142 → TIMESHEETS, ORD-0147 → SOURCING,
+  plus MétalPro ORD-0145 at INTAKE for isolation demos). It is extended by every later slice.
+- Tests: `PhaseTransitionTest` (all 36 from/to pairs), `MissionIT` (two missions advancing independently, gate and phase 409s,
+  tenant isolation on missions, filters), `DemoResetIT`.
+- Deviations: `GateCheck` carries `id`, `action` and `needsReview` in addition to `label`/`passed`, so the UI can show the next
+  action and the "Needs review" tag without extra logic. Workers and templates are Flyway reference data; only missions are reset.
+  Gate validators start as artifact-based checks and are replaced with the real phase rules in Slices 5–9.
