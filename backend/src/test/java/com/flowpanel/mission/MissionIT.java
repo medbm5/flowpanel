@@ -88,7 +88,7 @@ class MissionIT extends AbstractIntegrationTest {
 
         completeIntake(idB);
         call(post("/missions/" + idB + "/phases/intake/finalize").cookie(claire), status().isOk());
-        artifacts.upsert(idB, Phase.SOURCING, ArtifactService.SHORTLIST, "SL", "READY", Map.of());
+        completeSourcing(idB);
         JsonNode afterB = call(post("/missions/" + idB + "/phases/sourcing/finalize").cookie(claire), status().isOk());
 
         assertThat(afterB.get("phase").asText()).isEqualTo("CONTRACTS");
@@ -122,6 +122,16 @@ class MissionIT extends AbstractIntegrationTest {
                 call(post("/missions/" + id + "/intake/fields/" + f.get("name").asText() + "/confirm").cookie(claire),
                         status().isOk());
             }
+        }
+    }
+
+    /** Publishes and selects the top-ranked candidates until every position is filled. */
+    private void completeSourcing(long id) throws Exception {
+        JsonNode view = call(post("/missions/" + id + "/sourcing/publish").cookie(claire), status().isOk());
+        int quantity = view.get("quantity").asInt();
+        for (int i = 0; i < quantity; i++) {
+            long candidate = view.get("candidates").get(i).get("candidateId").asLong();
+            call(post("/missions/" + id + "/sourcing/select/" + candidate).cookie(claire), status().isOk());
         }
     }
 

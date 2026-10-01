@@ -1,20 +1,22 @@
 package com.flowpanel.sourcing;
 
-import com.flowpanel.mission.ArtifactService;
 import com.flowpanel.mission.Mission;
+import com.flowpanel.mission.MissionPositions.Positions;
 import com.flowpanel.mission.Phase;
 import com.flowpanel.mission.gate.GateCheck;
 import com.flowpanel.mission.gate.GateValidator;
 import java.util.List;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
+/** Sourcing is done when the order was published and every position is filled. */
 @Component
 public class SourcingGateValidator implements GateValidator {
 
-    private final ArtifactService artifacts;
+    private final SourcingService sourcing;
 
-    public SourcingGateValidator(ArtifactService artifacts) {
-        this.artifacts = artifacts;
+    public SourcingGateValidator(@Lazy SourcingService sourcing) {
+        this.sourcing = sourcing;
     }
 
     @Override
@@ -24,8 +26,14 @@ public class SourcingGateValidator implements GateValidator {
 
     @Override
     public List<GateCheck> check(Mission mission) {
-        var found = artifacts.byType(mission.getId(), ArtifactService.SHORTLIST);
-        boolean passed = !found.isEmpty() && found.stream().allMatch(a -> "READY".equals(a.getStatus()));
-        return List.of(GateCheck.of("shortlist-ready", "Shortlist ready", passed, "Publish the order to panel suppliers"));
+        boolean published = sourcing.isPublished(mission.getId());
+        Positions p = sourcing.positions(mission);
+        int total = p.total() == null ? 0 : p.total();
+        boolean filled = total > 0 && p.filled() >= total;
+        return List.of(
+                GateCheck.of("published", "Order published to panel suppliers", published,
+                        "Publish the order to panel suppliers"),
+                GateCheck.of("positions-filled", "Positions filled (" + p.filled() + "/" + total + ")", filled,
+                        "Select " + Math.max(0, total - p.filled()) + " more candidate" + (total - p.filled() == 1 ? "" : "s")));
     }
 }

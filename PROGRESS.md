@@ -81,3 +81,19 @@ _None yet._
   `ai_invalid_output`, low-confidence flow, correction, gate fail and pass, PII masking of the replaced employee, phase/tenant guards).
 - Deviations: added `weeklyHours`, `requiredCertifications` and `overtimeAllowed` to `OrderDraft` because sourcing, timesheets and
   the rules engines need them. The seeder now runs the real extraction for seeded missions.
+
+### Slice 6 — Sourcing phase with matching and double-booking protection
+- Built: `mission_supplier`, `candidate`, `placement` (`daterange` + `EXCLUDE USING gist (worker_id WITH =, period WITH &&)`).
+  `POST /missions/{id}/sourcing/publish` (order sent to every panel supplier; each supplier proposes its 4 closest profiles),
+  `POST|DELETE /missions/{id}/sourcing/select/{candidateId}` (capped at the order quantity, mission row lock, 409 "already placed on
+  ORD-xxxx" from a pre-check or, under concurrency, from the constraint violation + a lookup in a fresh transaction),
+  `GET /missions/{id}/sourcing`. `CandidateRanking` (pure Java): stage 1 hard rules (missing certification, partial availability,
+  overlapping placement), stage 2 score = 0.5 × embedding similarity + 0.3 × distance (gazetteer + haversine) + 0.2 × experience;
+  ✓/✗ explanations built from the same inputs. One-sentence AI summary (`sourcing.summary`, facts only) for the top 3.
+  Real `SourcingGateValidator` (published + positions filled), SHORTLIST artifact (DRAFT → FINAL), `MissionPositions` implementation for
+  the board. Supplier portal: `GET /supplier/orders`, `GET /supplier/orders/{id}` (only orders published to the caller's supplier, only
+  their own proposals and placements; 404 otherwise).
+- Seed: ORD-0142 places Karim Haddad and Lucas Petit (so new Lesquin forklift orders show "Already placed on ORD-2026-0142");
+  ORD-0147 is published with ranked proposals.
+- Tests: `CandidateRankingTest` (each rule pass/fail, scoring monotonicity), `SourcingIT` (reasons, AI summaries, cap, undo, excluded
+  candidate, cross-mission double booking, **concurrent selections → exactly one 200 and one 409**, supplier scoping, phase guard).
