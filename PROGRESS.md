@@ -212,3 +212,20 @@ Run log for the BUILD_PLAN.md slices. One entry per slice.
   `next/image` isn't needed. Query/toast providers moved from the root layout into `/app` and `/login` layouts so the landing page doesn't
   load them. `framer-motion` is pinned to 13.4.6 with `motion-dom` 13.4.5 via npm overrides: 13.5.0 was published mid-run with a missing
   export / unpublished tarball.
+
+### Slice 16 — Evaluation framework
+- Built: `evals/datasets` — `intake.jsonl` (21 French emails with expected fields), `invoice.jsonl` (16 invoice texts with expected lines),
+  `copilot_rag.jsonl` (22 questions with expected source document and key facts, incl. 2 unanswerable and cross-tenant twins),
+  `copilot_tools.jsonl` (16 questions with expected tool and answer value, incl. supplier-scope cases). Stdlib-only runner
+  `python -m evals run --suite all --base-url ...` (field accuracy, retrieval hit rate, citation validity, answer facts, tool-choice and
+  answer accuracy; optional LLM-as-judge faithfulness with `--judge` when `OPENAI_API_KEY` is set). Thresholds in `evals/thresholds.yaml`,
+  non-zero exit below threshold, `evals/report.json`, results posted to `POST /admin/evals/runs` with the git SHA; the admin dashboard shows
+  scores over time and the latest values vs thresholds. `make eval` → `evals/run_mock.sh` (throwaway database, backend jar in mock profile on
+  :8081, suite, shutdown).
+- Results (mock profile, deterministic): intake 1.00, invoice lines 1.00 / totals 1.00, RAG hit rate 1.00, citation validity 1.00, answer
+  accuracy 0.91, tool choice 1.00, tool answers 1.00 → PASS. Raising `rag.answer_accuracy` to 0.95 makes the command exit 1 (verified).
+- Mock improvements found by the evals (not dataset edits): position cleanup drops "obligatoire / exigée" words; the mock copilot no longer
+  routes "invoices paid within…" questions to the spend tool, skips section headings and requires the sentence to cover ~40 % of the
+  question terms (so unanswerable questions return "not found").
+- Deviations: Python 3.11 locally (CI uses 3.12); the eval backend runs with a neutral `ci` Spring profile (the `prod` profile's Secure cookie
+  would not be sent over plain HTTP).

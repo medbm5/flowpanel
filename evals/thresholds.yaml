@@ -1,0 +1,11 @@
+# Minimum score per metric. Any metric below its threshold fails `python -m evals run` (exit code 1) and the CI build.
+intake.field_accuracy: 0.90
+invoice.line_accuracy: 0.95
+invoice.total_accuracy: 0.95
+rag.hit_rate: 0.85
+rag.citation_validity: 0.95
+rag.answer_accuracy: 0.80
+tools.choice_accuracy: 0.90
+tools.answer_accuracy: 0.80
+# Only computed with --judge (OPENAI_API_KEY set):
+rag.faithfulness: 0.80

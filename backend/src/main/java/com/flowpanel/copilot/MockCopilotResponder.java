@@ -47,7 +47,7 @@ public class MockCopilotResponder implements MockResponder {
         String question = call.user();
         String q = fold(question);
         try {
-            if (q.matches("(?s).*(spend|spent|depense|cost|cout|budget|rate|taux|tarif|invoic|factur).*")
+            if (q.matches("(?s).*(spend|spent|depense|cost|cout|budget|rate|taux|tarif|how much|amount|montant).*")
                     && !q.matches("(?s).*(policy|politique|markup|coefficient|night|nuit|overtime|heures sup|bonus|agreement|accord|paid within|payment term).*")) {
                 return spend(tools.call(CopilotTools.SPEND, Map.of()));
             }
@@ -131,27 +131,32 @@ public class MockCopilotResponder implements MockResponder {
         Map<String, Object> result = mapper.readValue(json, new TypeReference<>() { });
         List<Map<String, Object>> passages = (List<Map<String, Object>>) result.getOrDefault("passages", List.of());
         Set<String> terms = terms(question);
+        // A sentence must cover a good part of the question to count as an answer; the section heading helps ranking.
+        long needed = Math.max(1, Math.round(Math.ceil(terms.size() * 0.4)));
         String best = null;
         int bestN = 0;
         double bestScore = 0;
         for (Map<String, Object> p : passages) {
             double passageScore = ((Number) p.get("score")).doubleValue();
+            String section = String.valueOf(p.getOrDefault("section", ""));
+            Set<String> headingTerms = terms(section);
+            long headingOverlap = headingTerms.stream().filter(terms::contains).count();
             String text = String.valueOf(p.get("text"));
             for (String sentence : text.split("(?<=[.!?])\\s+|\\n+")) {
-                if (sentence.length() < 15) {
+                String trimmed = sentence.strip();
+                if (trimmed.length() < 15 || trimmed.equalsIgnoreCase(section)) {
                     continue;
                 }
-                Set<String> words = terms(sentence);
-                long overlap = words.stream().filter(terms::contains).count();
-                double score = overlap + passageScore;
-                if (overlap > 0 && score > bestScore) {
+                long overlap = terms(trimmed).stream().filter(terms::contains).count();
+                double score = overlap + 0.75 * headingOverlap + passageScore;
+                if (overlap >= needed && score > bestScore) {
                     bestScore = score;
-                    best = sentence.strip();
+                    best = trimmed;
                     bestN = ((Number) p.get("n")).intValue();
                 }
             }
         }
-        if (best == null || bestScore < 1.15) {
+        if (best == null) {
             return CopilotService.NOT_FOUND;
         }
         return best + " [" + bestN + "]";

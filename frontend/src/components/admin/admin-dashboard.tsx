@@ -193,6 +193,20 @@ function EvalChart({ runs }: { runs: EvalRun[] }) {
       <p className="mt-2 text-xs text-muted-foreground">
         Latest run: {runs[0].gitSha.slice(0, 7)} · {runs[0].passed ? "passed" : "failed"} · {dateTime(runs[0].createdAt)}
       </p>
+      <ul className="mt-3 grid gap-2 text-xs sm:grid-cols-2 lg:grid-cols-4" data-testid="eval-latest">
+        {Object.entries(runs[0].metrics).map(([key, value]) => {
+          const min = runs[0].thresholds[key];
+          const ok = typeof min !== "number" || Number(value) >= min;
+          return (
+            <li key={key} className="flex items-center justify-between gap-2 rounded-lg border px-3 py-2">
+              <span className="font-mono">{key}</span>
+              <span className={ok ? "tabular-nums" : "tabular-nums font-semibold text-bad"}>
+                {Math.round(Number(value) * 100)}%{typeof min === "number" && <span className="text-muted-foreground"> / {Math.round(min * 100)}%</span>}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

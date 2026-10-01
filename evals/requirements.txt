@@ -1,0 +1,2 @@
+# Optional: the runner falls back to a flat key: value parser when PyYAML is missing.
+PyYAML>=6.0

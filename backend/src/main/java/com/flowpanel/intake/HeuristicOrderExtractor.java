@@ -125,7 +125,8 @@ public final class HeuristicOrderExtractor {
     }
 
     static String cleanPosition(String raw) {
-        String s = CERT.matcher(raw).replaceAll(" ");
+        String s = CERT.matcher(raw).replaceAll(" ")
+                .replaceAll("(?iu)(?<!\\p{L})(obligatoires?|exigée?s?|requise?s?|indispensables?|souhaitée?s?|apprécié(?:e|s)?)(?!\\p{L})", " ");
         Matcher stop = POSITION_STOP.matcher(s);
         if (stop.find()) {
             s = s.substring(0, stop.start());

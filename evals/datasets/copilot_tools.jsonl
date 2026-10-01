@@ -1,0 +1,16 @@
+{"id": "tools-01", "persona": "claire", "question": "How many missions do I have?", "expected_tool": "listMissions", "expected_value": "2 mission"}
+{"id": "tools-02", "persona": "claire", "question": "List my missions in progress", "expected_tool": "listMissions", "expected_value": "{ref:142}"}
+{"id": "tools-03", "persona": "claire", "question": "Which missions need review?", "expected_tool": "listMissions", "expected_value": "mission"}
+{"id": "tools-04", "persona": "marc", "question": "How many missions do I have?", "expected_tool": "listMissions", "expected_value": "1 mission"}
+{"id": "tools-05", "persona": "claire", "question": "What is the status of {ref:142}?", "expected_tool": "getMissionStatus", "expected_value": "TIMESHEETS"}
+{"id": "tools-06", "persona": "claire", "question": "Where is {ref:147} at?", "expected_tool": "getMissionStatus", "expected_value": "SOURCING"}
+{"id": "tools-07", "persona": "marc", "question": "What is the status of {ref:142}?", "expected_tool": "getMissionStatus", "expected_value": "can't find"}
+{"id": "tools-08", "persona": "claire", "question": "What is our spend by supplier?", "expected_tool": "getSpendBySupplier", "expected_value": "13.2"}
+{"id": "tools-09", "persona": "thomas", "question": "What are InterSud Intérim's hourly rates?", "expected_tool": "getSpendBySupplier", "expected_value": "Proxi Staffing"}
+{"id": "tools-10", "persona": "nadia", "question": "Show me the spend and rates of every supplier", "expected_tool": "getSpendBySupplier", "expected_value": "InterSud Intérim"}
+{"id": "tools-11", "persona": "claire", "question": "How many open timesheet anomalies are there?", "expected_tool": "listOpenAnomalies", "expected_value": "0 open"}
+{"id": "tools-12", "persona": "nadia", "question": "Do I have open anomalies on my timesheets?", "expected_tool": "listOpenAnomalies", "expected_value": "0 open"}
+{"id": "tools-13", "persona": "claire", "question": "Which contracts end before 2026-10-31?", "expected_tool": "listContractsEndingBefore", "expected_value": "2 contract"}
+{"id": "tools-14", "persona": "claire", "question": "Which contracts end before 2026-09-30?", "expected_tool": "listContractsEndingBefore", "expected_value": "0 contracts"}
+{"id": "tools-15", "persona": "thomas", "question": "Which of my contracts end before 2026-10-31?", "expected_tool": "listContractsEndingBefore", "expected_value": "1 contract"}
+{"id": "tools-16", "persona": "nadia", "question": "List the orders sent to me", "expected_tool": "listMissions", "expected_value": "2 mission"}
