@@ -134,3 +134,17 @@ _None yet._
 - Tests: `ThreeWayMatcherTest` (exact match, hour mismatch, rate mismatch, rounding, unknown/missing), `InvoicePdfTest` (PDF round trip +
   extraction + validation), `InvoiceIT` (Intake → Closed end to end with the credit note flow and summary figures, PDF tenant scoping,
   supplier invoice list, text extraction endpoint).
+
+### Slice 10 — Copilot: tool calling and document Q&A with citations (RAG)
+- Built: `document`, `document_chunk` (`tenant_id` denormalized, `vector(1536)`, HNSW `vector_cosine_ops` index). 4 synthetic policy documents
+  for LogiNord and 3 for MétalPro (night work, safety, panel agreement, timesheets), with near-identical night-work policies (25 % vs 40 %
+  bonus) to prove isolation. `Chunker` (headings first, ~500 tokens, ~60 overlap), `DocumentService` (ingest: extract → chunk → embed with
+  content-hash cache; `POST /documents` PDF or Markdown upload; `GET /documents`; search with `WHERE tenant_id = ?` in the same SQL as the
+  vector ordering, `hnsw.iterative_scan = relaxed_order` so the filter never starves the index). `CopilotTools`: `listMissions`,
+  `getMissionStatus`, `getSpendBySupplier`, `listOpenAnomalies`, `listContractsEndingBefore`, `searchDocuments`, all reading the scope from
+  the session (supplier users only see their supplier). `POST /copilot/ask` returns answer, citations, retrieved sources and the tool-call
+  trace; citations not pointing at a passage retrieved in this request are stripped and an uncited document answer becomes
+  "Not found in your documents.". Mock copilot routes by keywords and answers only from tool results (quotes + cites the best sentence).
+- Tests: `ChunkerTest` (+ citation verification), `CopilotIT` (tenant-isolated retrieval with near-identical documents, verbatim
+  cross-tenant query, citation validity, not-found, every data tool, out-of-scope mission, **supplier asking for another supplier's rates
+  with a prompt injection gets only its own data**, upload + search + duplicate upload).

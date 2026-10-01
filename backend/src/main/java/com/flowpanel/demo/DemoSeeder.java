@@ -4,6 +4,7 @@ import com.flowpanel.auth.CurrentUser;
 import com.flowpanel.auth.RequestContext;
 import com.flowpanel.auth.Role;
 import com.flowpanel.contract.ContractService;
+import com.flowpanel.copilot.DocumentService;
 import com.flowpanel.intake.IntakeService;
 import com.flowpanel.mission.Mission;
 import com.flowpanel.mission.MissionRepository;
@@ -43,6 +44,7 @@ public class DemoSeeder {
     private final IntakeService intake;
     private final SourcingService sourcing;
     private final ContractService contracts;
+    private final DocumentService documents;
     private final RequestContext context;
     private final JdbcTemplate jdbc;
     private final boolean seedOnStartup;
@@ -50,7 +52,7 @@ public class DemoSeeder {
 
     public DemoSeeder(MissionRepository missions, MissionService missionService, RequestTemplateRepository templates,
                       IntakeService intake, SourcingService sourcing,
-                      ContractService contracts, RequestContext context, JdbcTemplate jdbc, TransactionTemplate tx,
+                      ContractService contracts, DocumentService documents, RequestContext context, JdbcTemplate jdbc, TransactionTemplate tx,
                       @Value("${flowpanel.demo.seed-on-startup:true}") boolean seedOnStartup) {
         this.missions = missions;
         this.missionService = missionService;
@@ -58,6 +60,7 @@ public class DemoSeeder {
         this.intake = intake;
         this.sourcing = sourcing;
         this.contracts = contracts;
+        this.documents = documents;
         this.context = context;
         this.jdbc = jdbc;
         this.seedOnStartup = seedOnStartup;
@@ -66,9 +69,37 @@ public class DemoSeeder {
 
     @EventListener(ApplicationReadyEvent.class)
     public void onStartup() {
+        if (seedOnStartup) {
+            tx.executeWithoutResult(status -> seedDocuments());
+        }
         if (seedOnStartup && missions.count() == 0) {
             tx.executeWithoutResult(status -> seed());
             log.info("Demo data seeded");
+        }
+    }
+
+    /** Ingests the synthetic policy documents of each tenant once (chunked and embedded, cached by content hash). */
+    void seedDocuments() {
+        seedDocuments(CLAIRE, "loginord");
+        seedDocuments(MARC, "metalpro");
+    }
+
+    private void seedDocuments(CurrentUser user, String tenantCode) {
+        if (documents.count(user.tenantId()) > 0) {
+            return;
+        }
+        try {
+            var resources = new org.springframework.core.io.support.PathMatchingResourcePatternResolver()
+                    .getResources("classpath:documents/" + tenantCode + "/*.md");
+            java.util.Arrays.sort(resources, java.util.Comparator.comparing(r -> String.valueOf(r.getFilename())));
+            for (var r : resources) {
+                String content = new String(r.getInputStream().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+                String title = content.lines().filter(l -> l.startsWith("# ")).findFirst().map(l -> l.substring(2).strip())
+                        .orElse(r.getFilename());
+                context.runAs(user, () -> documents.ingest(user.tenantId(), title, "SEED", "text/markdown", content));
+            }
+        } catch (java.io.IOException e) {
+            throw new java.io.UncheckedIOException(e);
         }
     }
 
